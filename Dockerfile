@@ -1,21 +1,24 @@
 # syntax=docker/dockerfile:1
 
-FROM python:3.11-slim-buster
+FROM python:3.14.2-slim-trixie AS builder
 
-ENV POETRY_VERSION=1.4 \
-    POETRY_VIRTUALENVS_CREATE=false
+ENV POETRY_VERSION=2.3.1 POETRY_VIRTUALENVS_CREATE=false
 
-# Install poetry
-RUN pip install "poetry==$POETRY_VERSION"
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc libc-dev libpq-dev && \
+    pip install "poetry==$POETRY_VERSION" && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Copy only requirements to cache them in docker layer
-WORKDIR /code
-COPY poetry.lock pyproject.toml /code/
+WORKDIR /app
+COPY poetry.lock pyproject.toml README.md /app/
 
-# Project initialization:
-RUN poetry install --no-interaction --no-ansi --no-root --no-dev
+RUN poetry install --no-ansi --no-interaction --without dev
 
-# Copy Python code to the Docker image
-COPY client_api_vn /code/client_api_vn/
+COPY . /app/
 
-CMD [ "python", "client_api_vn/foo.py"]
+FROM python:3.14.2-slim-trixie
+
+WORKDIR /app
+COPY --from=builder /app /app
+
+CMD ["transfer_vn", "--help"]
