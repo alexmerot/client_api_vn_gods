@@ -10,11 +10,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY poetry.lock pyproject.toml README.md /app/
+COPY . /app/
 
 RUN poetry install --no-ansi --no-interaction --without dev
-
-COPY . /app/
 
 FROM python:3.14.2-slim-trixie
 
