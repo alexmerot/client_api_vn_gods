@@ -1,5 +1,9 @@
 # Client_API_VN
 
+> [!NOTE] Fork of <https://github.com/dthonon/Client_API_VN>
+> Changes are made in the `custom/main` branch.
+> The `main` branch is up to date with the original repository.
+
 [![Release](https://img.shields.io/github/v/release/dthonon/Client_API_VN)](https://img.shields.io/github/v/release/dthonon/Client_API_VN)
 [![Build status](https://img.shields.io/github/actions/workflow/status/dthonon/Client_API_VN/main.yml?branch=main)](https://github.com/dthonon/Client_API_VN/actions/workflows/main.yml?query=branch%3Amain)
 [![codecov](https://codecov.io/gh/dthonon/Client_API_VN/branch/main/graph/badge.svg)](https://codecov.io/gh/dthonon/Client_API_VN)
