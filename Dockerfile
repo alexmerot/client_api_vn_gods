@@ -16,7 +16,17 @@ RUN poetry install --no-ansi --no-interaction --without dev
 
 FROM python:3.14.2-slim-trixie
 
+# Set up non-root user for added security
+RUN useradd -r -m -d /home/appuser -U appuser
+
 WORKDIR /app
 COPY --from=builder /app /app
 
+# Set permissions for the non-root user
+RUN chown -R appuser:appuser /app
+
+# Switch to non-root user
+USER appuser
+
+# Default command
 CMD ["transfer_vn", "--help"]
