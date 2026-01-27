@@ -504,8 +504,8 @@ class PostgresqlUtils:
             logger.debug(_("Creating extensions"))
             text = "CREATE EXTENSION IF NOT EXISTS pgcrypto"
             conn.execute(text)
-            text = "CREATE EXTENSION IF NOT EXISTS adminpack"
-            conn.execute(text)
+            # text = "CREATE EXTENSION IF NOT EXISTS adminpack"
+            # conn.execute(text)
             text = 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp"'
             conn.execute(text)
             text = "CREATE EXTENSION IF NOT EXISTS postgis"
