@@ -42,12 +42,14 @@ RUN useradd -r -m -d /home/appuser -U appuser
 WORKDIR /app
 COPY --from=builder /app /app
 
+RUN mkdir -p /home/appuser/config
+
 # Activate the virtual environment
 ENV VIRTUAL_ENV=/app/.venv
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 # Set permissions for the non-root user
-RUN chown -R appuser:appuser /app
+RUN chown -R appuser:appuser /app && chown -R appuser:appuser /home/appuser
 
 # Switch to non-root user
 USER appuser
