@@ -2,7 +2,7 @@
 
 FROM python:3.14.2-slim-trixie AS builder
 
-ENV POETRY_VERSION=2.3.1 POETRY_VIRTUALENVS_CREATE=false
+ENV POETRY_VERSION=2.3.1 POETRY_VIRTUALENVS_CREATE=true POETRY_NO_INTERACTION=1
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc libc-dev libpq-dev && \
@@ -10,9 +10,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY . /app/
 
-RUN poetry install --no-ansi --no-interaction --without dev
+# Two runs for Docker layer caching optimisation
+COPY pyproject.toml poetry.lock ./
+
+RUN poetry install --no-ansi --without dev --no-root
+
+COPY . .
+
+RUN poetry install --no-ansi --without dev
 
 FROM python:3.14.2-slim-trixie
 
@@ -35,6 +41,10 @@ RUN useradd -r -m -d /home/appuser -U appuser
 
 WORKDIR /app
 COPY --from=builder /app /app
+
+# Activate the virtual environment
+ENV VIRTUAL_ENV=/app/.venv
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 # Set permissions for the non-root user
 RUN chown -R appuser:appuser /app
