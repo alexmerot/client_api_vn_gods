@@ -16,6 +16,20 @@ RUN poetry install --no-ansi --no-interaction --without dev
 
 FROM python:3.14.2-slim-trixie
 
+# Set timezone to Europe/Paris
+ENV TZ=Europe/Paris
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+# Set locale to French
+RUN apt-get update && apt-get install -y locales && \
+    sed -i '/fr_FR.UTF-8/s/^# //g' /etc/locale.gen && \
+    locale-gen fr_FR.UTF-8 && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+ENV LANG=fr_FR.UTF-8
+ENV LANGUAGE=fr_FR:fr
+ENV LC_ALL=fr_FR.UTF-8
+
 # Set up non-root user for added security
 RUN useradd -r -m -d /home/appuser -U appuser
 
