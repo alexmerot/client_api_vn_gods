@@ -2,7 +2,10 @@
 
 FROM python:3.14.2-slim-trixie AS builder
 
-ENV POETRY_VERSION=2.3.1 POETRY_VIRTUALENVS_CREATE=true POETRY_NO_INTERACTION=1
+ENV POETRY_VERSION=2.3.1 \
+    POETRY_VIRTUALENVS_CREATE=true \
+    POETRY_VIRTUALENVS_IN_PROJECT=true \
+    POETRY_NO_INTERACTION=1
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc libc-dev libpq-dev && \
