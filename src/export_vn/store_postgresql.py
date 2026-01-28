@@ -139,11 +139,9 @@ def store_1_observation(item):
     site = item.site
     insert_stmt = insert(metadata).values(
         id=elem["observers"][0]["id_sighting"],
-        # TODO: Check if it is valid to add insee
         insee=elem["observers"][0]["id_sighting"]["place"]["insee"],
         site=site,
         update_ts=update_date,
-        # TODO: Understand the structure of 'item'
         id_form_universal=item.form,
         item=elem,
     )
