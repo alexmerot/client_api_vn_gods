@@ -592,33 +592,33 @@ def increment_download_1(ctrl: str, settings: dict) -> None:
     logger.debug(_("Enter increment_download_1: %s"), ctrl)
     with (
         StorePostgresql(
-            settings["SITE"]["name"],
-            settings["DATABASE"]["enabled"],
-            settings["DATABASE"]["db_user"],
-            settings["DATABASE"]["db_pw"],
-            settings["DATABASE"]["db_host"],
-            settings["DATABASE"]["db_port"],
-            settings["DATABASE"]["db_name"],
-            settings["DATABASE"]["db_schema_import"],
-            settings["DATABASE"]["db_schema_vn"],
-            settings["DATABASE"]["db_group"],
-            settings["DATABASE"]["db_out_proj"],
-            settings["DATABASE"].get("db_sslmode", "prefer"),
+            settings["site"]["name"],
+            settings["database"]["enabled"],
+            settings["database"]["db_user"],
+            settings["database"]["db_pw"],
+            settings["database"]["db_host"],
+            settings["database"]["db_port"],
+            settings["database"]["db_name"],
+            settings["database"]["db_schema_import"],
+            settings["database"]["db_schema_vn"],
+            settings["database"]["db_group"],
+            settings["database"]["db_out_proj"],
+            settings["database"].get("db_sslmode", "prefer"),
         ) as store_pg,
-        StoreFile(settings["FILE"]["enabled"], settings["FILE"]["file_store"]) as store_f,
+        StoreFile(settings["file"]["enabled"], settings["file"]["file_store"]) as store_f,
     ):
         store_all = StoreAll(
-            settings["DATABASE"]["enabled"], settings["FILE"]["enabled"], db_backend=store_pg, file_backend=store_f
+            settings["database"]["enabled"], settings["file"]["enabled"], db_backend=store_pg, file_backend=store_f
         )
-        if settings["CONTROLER"][ctrl]["enabled"]:
+        if settings["controler"][ctrl]["enabled"]:
             logger.info(
                 _("%s => Starting incremental download using controler %s"),
-                settings["SITE"]["name"],
+                settings["site"]["name"],
                 ctrl,
             )
 
         if ctrl == "observations":
-            taxo_exclude = list(key for key, value in settings["FILTER"]["taxo_download"].items() if value is False)
+            taxo_exclude = list(key for key, value in settings["filter"]["taxo_download"].items() if value is False)
             logger.info(_("Excluded taxo_groups: %s"), taxo_exclude)
             CTRL_DEFS[ctrl](
                 site=settings["SITE"]["name"],
@@ -639,22 +639,22 @@ def increment_download_1(ctrl: str, settings: dict) -> None:
                 db_out_proj=settings["DATABASE"]["db_out_proj"],
                 db_sslmode=settings["DATABASE"].get("db_sslmode", "prefer"),
                 backend=store_all,
-                start_date=settings["FILTER"].get("start_date", None),
-                end_date=settings["FILTER"].get("end_date", None),
-                type_date=settings["FILTER"].get("type_date", "sighting"),
-                max_list_length=settings["TUNING"]["max_list_length"],
-                max_retry=settings["TUNING"]["max_retry"],
-                max_requests=settings["TUNING"]["max_requests"],
-                max_chunks=settings["TUNING"]["max_chunks"],
-                unavailable_delay=settings["TUNING"]["unavailable_delay"],
-                retry_delay=settings["TUNING"]["retry_delay"],
-                pid_kp=settings["TUNING"]["pid_kp"],
-                pid_ki=settings["TUNING"]["pid_ki"],
-                pid_kd=settings["TUNING"]["pid_kd"],
-                pid_setpoint=settings["TUNING"]["pid_setpoint"],
-                pid_limit_min=settings["TUNING"]["pid_limit_min"],
-                pid_limit_max=settings["TUNING"]["pid_limit_max"],
-                pid_delta_days=settings["TUNING"]["pid_delta_days"],
+                start_date=settings["filter"].get("start_date", None),
+                end_date=settings["filter"].get("end_date", None),
+                type_date=settings["filter"].get("type_date", "sighting"),
+                max_list_length=settings["tuning"]["max_list_length"],
+                max_retry=settings["tuning"]["max_retry"],
+                max_requests=settings["tuning"]["max_requests"],
+                max_chunks=settings["tuning"]["max_chunks"],
+                unavailable_delay=settings["tuning"]["unavailable_delay"],
+                retry_delay=settings["tuning"]["retry_delay"],
+                pid_kp=settings["tuning"]["pid_kp"],
+                pid_ki=settings["tuning"]["pid_ki"],
+                pid_kd=settings["tuning"]["pid_kd"],
+                pid_setpoint=settings["tuning"]["pid_setpoint"],
+                pid_limit_min=settings["tuning"]["pid_limit_min"],
+                pid_limit_max=settings["tuning"]["pid_limit_max"],
+                pid_delta_days=settings["tuning"]["pid_delta_days"],
             ).update(
                 taxo_groups_ex=taxo_exclude,
             )
@@ -668,7 +668,7 @@ def increment_download_1(ctrl: str, settings: dict) -> None:
                 client_secret=settings["SITE"]["client_secret"],
                 backend=store_all,
             ).update(
-                territorial_unit_ids=settings["FILTER"]["territorial_unit_ids"],
+                territorial_unit_ids=settings["filter"]["territorial_unit_ids"],
             )
         elif ctrl == "local_admin_units":
             CTRL_DEFS[ctrl](
@@ -680,7 +680,7 @@ def increment_download_1(ctrl: str, settings: dict) -> None:
                 client_secret=settings["SITE"]["client_secret"],
                 backend=store_all,
             ).store(
-                territorial_unit_ids=settings["FILTER"]["territorial_unit_ids"],
+                territorial_unit_ids=settings["filter"]["territorial_unit_ids"],
             )
         else:
             CTRL_DEFS[ctrl](
