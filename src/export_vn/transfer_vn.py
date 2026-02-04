@@ -440,102 +440,97 @@ def migrate(cfg, sql_quiet, client_min_message):
 def full_download_1(ctrl: str, settings: dict) -> None:
     """Downloads from a single controler."""
     logger.debug(_("Enter full_download_1: %s"), ctrl)
-    logger.debug("Settings top-level keys: %s", list(settings.keys()))
-    if "SITE" in settings:
-        logger.debug("SITE keys: %s", list(settings["SITE"].keys()))
-    elif "site" in settings:
-        logger.debug("site keys: %s", list(settings["site"].keys()))
     with (
         StorePostgresql(
-            settings["SITE"]["NAME"],
-            settings["DATABASE"]["ENABLED"],
-            settings["DATABASE"]["DB_USER"],
-            settings["DATABASE"]["DB_PW"],
-            settings["DATABASE"]["DB_HOST"],
-            settings["DATABASE"]["DB_PORT"],
-            settings["DATABASE"]["DB_NAME"],
-            settings["DATABASE"]["DB_SCHEMA_IMPORT"],
-            settings["DATABASE"]["DB_SCHEMA_VN"],
-            settings["DATABASE"]["DB_GROUP"],
-            settings["DATABASE"]["DB_OUT_PROJ"],
-            settings["DATABASE"].get("DB_SSLMODE", "prefer"),
+            settings["SITE"]["name"],
+            settings["DATABASE"]["enabled"],
+            settings["DATABASE"]["db_user"],
+            settings["DATABASE"]["db_pw"],
+            settings["DATABASE"]["db_host"],
+            settings["DATABASE"]["db_port"],
+            settings["DATABASE"]["db_name"],
+            settings["DATABASE"]["db_schema_import"],
+            settings["DATABASE"]["db_schema_vn"],
+            settings["DATABASE"]["db_group"],
+            settings["DATABASE"]["db_out_proj"],
+            settings["DATABASE"].get("db_sslmode", "prefer"),
         ) as store_pg,
-        StoreFile(settings["FILE"]["ENABLED"], settings["FILE"]["FILE_STORE"]) as store_f,
+        StoreFile(settings["FILE"]["enabled"], settings["FILE"]["file_store"]) as store_f,
     ):
         store_all = StoreAll(
-            settings["DATABASE"]["ENABLED"], settings["FILE"]["ENABLED"], db_backend=store_pg, file_backend=store_f
+            settings["DATABASE"]["enabled"], settings["FILE"]["enabled"], db_backend=store_pg, file_backend=store_f
         )
-        if settings["CONTROLER"][ctrl]["ENABLED"]:
+        if settings["CONTROLER"][ctrl]["enabled"]:
             logger.info(
                 _("Starting download using controler %s"),
                 ctrl,
             )
         if ctrl == "observations":
-            taxo_exclude = list(key for key, value in settings["FILTER"]["TAXO_DOWNLOAD"].items() if value is False)
+            taxo_exclude = list(key for key, value in settings["FILTER"]["taxo_download"].items() if value is False)
             logger.info(_("Excluded taxo_groups: %s"), taxo_exclude)
             CTRL_DEFS[ctrl](
-                site=settings["SITE"]["NAME"],
-                user_email=settings["SITE"]["USER_EMAIL"],
-                user_pw=settings["SITE"]["USER_PW"],
-                base_url=settings["SITE"]["URL"],
-                client_key=settings["SITE"]["CLIENT_KEY"],
-                client_secret=settings["SITE"]["CLIENT_SECRET"],
-                db_enabled=settings["DATABASE"]["ENABLED"],
-                db_user=settings["DATABASE"]["DB_USER"],
-                db_pw=settings["DATABASE"]["DB_PW"],
-                db_host=settings["DATABASE"]["DB_HOST"],
-                db_port=settings["DATABASE"]["DB_PORT"],
-                db_name=settings["DATABASE"]["DB_NAME"],
-                db_schema_import=settings["DATABASE"]["DB_SCHEMA_IMPORT"],
-                db_schema_vn=settings["DATABASE"]["DB_SCHEMA_VN"],
-                db_group=settings["DATABASE"]["DB_GROUP"],
-                db_out_proj=settings["DATABASE"]["DB_OUT_PROJ"],
-                db_sslmode=settings["DATABASE"].get("DB_SSLMODE", "prefer"),
+                site=settings["SITE"]["name"],
+                user_email=settings["SITE"]["user_email"],
+                user_pw=settings["SITE"]["user_pw"],
+                base_url=settings["SITE"]["url"],
+                client_key=settings["SITE"]["client_key"],
+                client_secret=settings["SITE"]["client_secret"],
+                db_enabled=settings["DATABASE"]["enabled"],
+                db_user=settings["DATABASE"]["db_user"],
+                db_pw=settings["DATABASE"]["db_pw"],
+                db_host=settings["DATABASE"]["db_host"],
+                db_port=settings["DATABASE"]["db_port"],
+                db_name=settings["DATABASE"]["db_name"],
+                db_schema_import=settings["DATABASE"]["db_schema_import"],
+                db_schema_vn=settings["DATABASE"]["db_schema_vn"],
+                db_group=settings["DATABASE"]["db_group"],
+                db_out_proj=settings["DATABASE"]["db_out_proj"],
+                db_sslmode=settings["DATABASE"].get("db_sslmode", "prefer"),
                 backend=store_all,
-                start_date=settings["FILTER"].get("START_DATE", None),
-                end_date=settings["FILTER"].get("END_DATE", None),
-                type_date=settings["FILTER"].get("TYPE_DATE", "sighting"),
-                max_list_length=settings["TUNING"]["MAX_LIST_LENGTH"],
-                max_retry=settings["TUNING"]["MAX_RETRY"],
-                max_requests=settings["TUNING"]["MAX_REQUESTS"],
-                max_chunks=settings["TUNING"]["MAX_CHUNKS"],
-                unavailable_delay=settings["TUNING"]["UNAVAILABLE_DELAY"],
-                retry_delay=settings["TUNING"]["RETRY_DELAY"],
-                pid_kp=settings["TUNING"]["PID_KP"],
-                pid_ki=settings["TUNING"]["PID_KI"],
-                pid_kd=settings["TUNING"]["PID_KD"],
-                pid_setpoint=settings["TUNING"]["SETPOINT"],
-                pid_limit_min=settings["TUNING"]["PID_LIMIT_MIN"],
-                pid_limit_max=settings["TUNING"]["PID_LIMIT_MAX"],
-                pid_delta_days=settings["TUNING"]["PID_DELTA_DAYS"],
+                start_date=settings["FILTER"].get("start_date", None),
+                end_date=settings["FILTER"].get("end_date", None),
+                type_date=settings["FILTER"].get("type_date", "sighting"),
+                max_list_length=settings["TUNING"]["max_list_length"],
+                max_retry=settings["TUNING"]["max_retry"],
+                max_requests=settings["TUNING"]["max_requests"],
+                max_chunks=settings["TUNING"]["max_chunks"],
+                unavailable_delay=settings["TUNING"]["unavailable_delay"],
+                retry_delay=settings["TUNING"]["retry_delay"],
+                pid_kp=settings["TUNING"]["pid_kp"],
+                pid_ki=settings["TUNING"]["pid_ki"],
+                pid_kd=settings["TUNING"]["pid_kd"],
+                pid_setpoint=settings["TUNING"]["setpoint"],
+                pid_limit_min=settings["TUNING"]["pid_limit_min"],
+                pid_limit_max=settings["TUNING"]["pid_limit_max"],
+                pid_delta_days=settings["TUNING"]["pid_delta_days"],
             ).store(
                 taxo_groups_ex=taxo_exclude,
-                territorial_unit_ids=settings["FILTER"]["TERRITORIAL_UNIT_IDS"],
+                territorial_unit_ids=settings["FILTER"]["territorial_unit_ids"],
             )
         elif (ctrl == "local_admin_units") or (ctrl == "places"):
             logger.info(
                 _("Included territorial_unit_ids: %s"),
-                settings["FILTER"]["TERRITORIAL_UNIT_IDS"],
+                settings["FILTER"]["territorial_unit_ids"],
             )
             CTRL_DEFS[ctrl](
-                site=settings["SITE"]["NAME"],
-                user_email=settings["SITE"]["USER_EMAIL"],
-                user_pw=settings["SITE"]["USER_PW"],
-                base_url=settings["SITE"]["URL"],
-                client_key=settings["SITE"]["CLIENT_KEY"],
-                client_secret=settings["SITE"]["CLIENT_SECRET"],
+                site=settings["SITE"]["name"],
+                user_email=settings["SITE"]["user_email"],
+                user_pw=settings["SITE"]["user_pw"],
+                base_url=settings["SITE"]["url"],
+                client_key=settings["SITE"]["client_key"],
+                client_secret=settings["SITE"]["client_secret"],
                 backend=store_all,
             ).store(
-                territorial_unit_ids=settings["FILTER"]["TERRITORIAL_UNIT_IDS"],
+                territorial_unit_ids=settings["FILTER"]["territorial_unit_ids"],
             )
         else:
             CTRL_DEFS[ctrl](
-                site=settings["SITE"]["NAME"],
-                user_email=settings["SITE"]["USER_EMAIL"],
-                user_pw=settings["SITE"]["USER_PW"],
-                base_url=settings["SITE"]["URL"],
-                client_key=settings["SITE"]["CLIENT_KEY"],
-                client_secret=settings["SITE"]["CLIENT_SECRET"],
+                site=settings["SITE"]["name"],
+                user_email=settings["SITE"]["user_email"],
+                user_pw=settings["SITE"]["user_pw"],
+                base_url=settings["SITE"]["url"],
+                client_key=settings["SITE"]["client_key"],
+                client_secret=settings["SITE"]["client_secret"],
                 backend=store_all,
             ).store()
         logger.info(_("Ending download using controler %s"), ctrl)
@@ -596,104 +591,104 @@ def increment_download_1(ctrl: str, settings: dict) -> None:
     logger.debug(_("Enter increment_download_1: %s"), ctrl)
     with (
         StorePostgresql(
-            settings["SITE"]["NAME"],
-            settings["DATABASE"]["ENABLED"],
-            settings["DATABASE"]["DB_USER"],
-            settings["DATABASE"]["DB_PW"],
-            settings["DATABASE"]["DB_HOST"],
-            settings["DATABASE"]["DB_PORT"],
-            settings["DATABASE"]["DB_NAME"],
-            settings["DATABASE"]["DB_SCHEMA_IMPORT"],
-            settings["DATABASE"]["DB_SCHEMA_VN"],
-            settings["DATABASE"]["DB_GROUP"],
-            settings["DATABASE"]["DB_OUT_PROJ"],
-            settings["DATABASE"].get("DB_SSLMODE", "prefer"),
+            settings["SITE"]["name"],
+            settings["DATABASE"]["enabled"],
+            settings["DATABASE"]["db_user"],
+            settings["DATABASE"]["db_pw"],
+            settings["DATABASE"]["db_host"],
+            settings["DATABASE"]["db_port"],
+            settings["DATABASE"]["db_name"],
+            settings["DATABASE"]["db_schema_import"],
+            settings["DATABASE"]["db_schema_vn"],
+            settings["DATABASE"]["db_group"],
+            settings["DATABASE"]["db_out_proj"],
+            settings["DATABASE"].get("db_sslmode", "prefer"),
         ) as store_pg,
-        StoreFile(settings["FILE"]["ENABLED"], settings["FILE"]["FILE_STORE"]) as store_f,
+        StoreFile(settings["FILE"]["enabled"], settings["FILE"]["file_store"]) as store_f,
     ):
         store_all = StoreAll(
-            settings["DATABASE"]["ENABLED"], settings["FILE"]["ENABLED"], db_backend=store_pg, file_backend=store_f
+            settings["DATABASE"]["enabled"], settings["FILE"]["enabled"], db_backend=store_pg, file_backend=store_f
         )
-        if settings["CONTROLER"][ctrl]["ENABLED"]:
+        if settings["CONTROLER"][ctrl]["enabled"]:
             logger.info(
                 _("%s => Starting incremental download using controler %s"),
-                settings["SITE"]["NAME"],
+                settings["SITE"]["name"],
                 ctrl,
             )
 
         if ctrl == "observations":
-            taxo_exclude = list(key for key, value in settings["FILTER"]["TAXO_DOWNLOAD"].items() if value is False)
+            taxo_exclude = list(key for key, value in settings["FILTER"]["taxo_download"].items() if value is False)
             logger.info(_("Excluded taxo_groups: %s"), taxo_exclude)
             CTRL_DEFS[ctrl](
-                site=settings["SITE"]["NAME"],
-                user_email=settings["SITE"]["USER_EMAIL"],
-                user_pw=settings["SITE"]["USER_PW"],
-                base_url=settings["SITE"]["URL"],
-                client_key=settings["SITE"]["CLIENT_KEY"],
-                client_secret=settings["SITE"]["CLIENT_SECRET"],
-                db_enabled=settings["DATABASE"]["ENABLED"],
-                db_user=settings["DATABASE"]["DB_USER"],
-                db_pw=settings["DATABASE"]["DB_PW"],
-                db_host=settings["DATABASE"]["DB_HOST"],
-                db_port=settings["DATABASE"]["DB_PORT"],
-                db_name=settings["DATABASE"]["DB_NAME"],
-                db_schema_import=settings["DATABASE"]["DB_SCHEMA_IMPORT"],
-                db_schema_vn=settings["DATABASE"]["DB_SCHEMA_VN"],
-                db_group=settings["DATABASE"]["DB_GROUP"],
-                db_out_proj=settings["DATABASE"]["DB_OUT_PROJ"],
-                db_sslmode=settings["DATABASE"].get("DB_SSLMODE", "prefer"),
+                site=settings["SITE"]["name"],
+                user_email=settings["SITE"]["user_email"],
+                user_pw=settings["SITE"]["user_pw"],
+                base_url=settings["SITE"]["url"],
+                client_key=settings["SITE"]["client_key"],
+                client_secret=settings["SITE"]["client_secret"],
+                db_enabled=settings["DATABASE"]["enabled"],
+                db_user=settings["DATABASE"]["db_user"],
+                db_pw=settings["DATABASE"]["db_pw"],
+                db_host=settings["DATABASE"]["db_host"],
+                db_port=settings["DATABASE"]["db_port"],
+                db_name=settings["DATABASE"]["db_name"],
+                db_schema_import=settings["DATABASE"]["db_schema_import"],
+                db_schema_vn=settings["DATABASE"]["db_schema_vn"],
+                db_group=settings["DATABASE"]["db_group"],
+                db_out_proj=settings["DATABASE"]["db_out_proj"],
+                db_sslmode=settings["DATABASE"].get("db_sslmode", "prefer"),
                 backend=store_all,
-                start_date=settings["FILTER"].get("START_DATE", None),
-                end_date=settings["FILTER"].get("END_DATE", None),
-                type_date=settings["FILTER"].get("TYPE_DATE", "sighting"),
-                max_list_length=settings["TUNING"]["MAX_LIST_LENGTH"],
-                max_retry=settings["TUNING"]["MAX_RETRY"],
-                max_requests=settings["TUNING"]["MAX_REQUESTS"],
-                max_chunks=settings["TUNING"]["MAX_CHUNKS"],
-                unavailable_delay=settings["TUNING"]["UNAVAILABLE_DELAY"],
-                retry_delay=settings["TUNING"]["RETRY_DELAY"],
-                pid_kp=settings["TUNING"]["PID_KP"],
-                pid_ki=settings["TUNING"]["PID_KI"],
-                pid_kd=settings["TUNING"]["PID_KD"],
-                pid_setpoint=settings["TUNING"]["SETPOINT"],
-                pid_limit_min=settings["TUNING"]["PID_LIMIT_MIN"],
-                pid_limit_max=settings["TUNING"]["PID_LIMIT_MAX"],
-                pid_delta_days=settings["TUNING"]["PID_DELTA_DAYS"],
+                start_date=settings["FILTER"].get("start_date", None),
+                end_date=settings["FILTER"].get("end_date", None),
+                type_date=settings["FILTER"].get("type_date", "sighting"),
+                max_list_length=settings["TUNING"]["max_list_length"],
+                max_retry=settings["TUNING"]["max_retry"],
+                max_requests=settings["TUNING"]["max_requests"],
+                max_chunks=settings["TUNING"]["max_chunks"],
+                unavailable_delay=settings["TUNING"]["unavailable_delay"],
+                retry_delay=settings["TUNING"]["retry_delay"],
+                pid_kp=settings["TUNING"]["pid_kp"],
+                pid_ki=settings["TUNING"]["pid_ki"],
+                pid_kd=settings["TUNING"]["pid_kd"],
+                pid_setpoint=settings["TUNING"]["setpoint"],
+                pid_limit_min=settings["TUNING"]["pid_limit_min"],
+                pid_limit_max=settings["TUNING"]["pid_limit_max"],
+                pid_delta_days=settings["TUNING"]["pid_delta_days"],
             ).update(
                 taxo_groups_ex=taxo_exclude,
             )
         elif ctrl == "places":
             CTRL_DEFS[ctrl](
-                site=settings["SITE"]["NAME"],
-                user_email=settings["SITE"]["USER_EMAIL"],
-                user_pw=settings["SITE"]["USER_PW"],
-                base_url=settings["SITE"]["URL"],
-                client_key=settings["SITE"]["CLIENT_KEY"],
-                client_secret=settings["SITE"]["CLIENT_SECRET"],
+                site=settings["SITE"]["name"],
+                user_email=settings["SITE"]["user_email"],
+                user_pw=settings["SITE"]["user_pw"],
+                base_url=settings["SITE"]["url"],
+                client_key=settings["SITE"]["client_key"],
+                client_secret=settings["SITE"]["client_secret"],
                 backend=store_all,
             ).update(
-                territorial_unit_ids=settings["FILTER"]["TERRITORIAL_UNIT_IDS"],
+                territorial_unit_ids=settings["FILTER"]["territorial_unit_ids"],
             )
         elif ctrl == "local_admin_units":
             CTRL_DEFS[ctrl](
-                site=settings["SITE"]["NAME"],
-                user_email=settings["SITE"]["USER_EMAIL"],
-                user_pw=settings["SITE"]["USER_PW"],
-                base_url=settings["SITE"]["URL"],
-                client_key=settings["SITE"]["CLIENT_KEY"],
-                client_secret=settings["SITE"]["CLIENT_SECRET"],
+                site=settings["SITE"]["name"],
+                user_email=settings["SITE"]["user_email"],
+                user_pw=settings["SITE"]["user_pw"],
+                base_url=settings["SITE"]["url"],
+                client_key=settings["SITE"]["client_key"],
+                client_secret=settings["SITE"]["client_secret"],
                 backend=store_all,
             ).store(
-                territorial_unit_ids=settings["FILTER"]["TERRITORIAL_UNIT_IDS"],
+                territorial_unit_ids=settings["FILTER"]["territorial_unit_ids"],
             )
         else:
             CTRL_DEFS[ctrl](
-                site=settings["SITE"]["NAME"],
-                user_email=settings["SITE"]["USER_EMAIL"],
-                user_pw=settings["SITE"]["USER_PW"],
-                base_url=settings["SITE"]["URL"],
-                client_key=settings["SITE"]["CLIENT_KEY"],
-                client_secret=settings["SITE"]["CLIENT_SECRET"],
+                site=settings["SITE"]["name"],
+                user_email=settings["SITE"]["user_email"],
+                user_pw=settings["SITE"]["user_pw"],
+                base_url=settings["SITE"]["url"],
+                client_key=settings["SITE"]["client_key"],
+                client_secret=settings["SITE"]["client_secret"],
                 backend=store_all,
             ).store()
     logger.info(_("Ending download using controler %s"), ctrl)
