@@ -191,12 +191,12 @@ TAXO_GROUP_FORMICOIDEA = false
 [site]
 # VisioNature site access parameters.
 
-[site.tff]
-# Sites parameters for tff.
 # Enable download from this site.
 enabled = true
+# Site name (short identifier).
+name = "tff"
 # Site URL.
-site = "https://www.faune-xxx.org/"
+url = "https://www.faune-xxx.org/"
 # Username.
 user_email = "nom.prenom@example.net"
 # User password.
