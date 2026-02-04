@@ -454,6 +454,7 @@ def full_download_1(ctrl: str, settings: dict) -> None:
             settings["DATABASE"]["db_schema_vn"],
             settings["DATABASE"]["db_group"],
             settings["DATABASE"]["db_out_proj"],
+            settings["DATABASE"].get("db_sslmode", "prefer"),
         ) as store_pg,
         StoreFile(settings["FILE"]["enabled"], settings["FILE"]["file_store"]) as store_f,
     ):
@@ -485,6 +486,7 @@ def full_download_1(ctrl: str, settings: dict) -> None:
                 db_schema_vn=settings["DATABASE"]["db_schema_vn"],
                 db_group=settings["DATABASE"]["db_group"],
                 db_out_proj=settings["DATABASE"]["db_out_proj"],
+                db_sslmode=settings["DATABASE"].get("db_sslmode", "prefer"),
                 backend=store_all,
                 start_date=settings["FILTER"].get("start_date", None),
                 end_date=settings["FILTER"].get("end_date", None),
@@ -601,6 +603,7 @@ def increment_download_1(ctrl: str, settings: dict) -> None:
             settings["DATABASE"]["db_schema_vn"],
             settings["DATABASE"]["db_group"],
             settings["DATABASE"]["db_out_proj"],
+            settings["DATABASE"].get("db_sslmode", "prefer"),
         ) as store_pg,
         StoreFile(settings["FILE"]["enabled"], settings["FILE"]["file_store"]) as store_f,
     ):
@@ -634,6 +637,7 @@ def increment_download_1(ctrl: str, settings: dict) -> None:
                 db_schema_vn=settings["DATABASE"]["db_schema_vn"],
                 db_group=settings["DATABASE"]["db_group"],
                 db_out_proj=settings["DATABASE"]["db_out_proj"],
+                db_sslmode=settings["DATABASE"].get("db_sslmode", "prefer"),
                 backend=store_all,
                 start_date=settings["FILTER"].get("start_date", None),
                 end_date=settings["FILTER"].get("end_date", None),
@@ -943,6 +947,7 @@ def main(args) -> None:
         settings.database.db_schema_import,
         settings.database.db_schema_vn,
         settings.database.db_group,
+        getattr(settings.database, "db_sslmode", "prefer"),
     )
 
     if args.db_drop:
