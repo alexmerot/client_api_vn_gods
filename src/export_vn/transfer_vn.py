@@ -443,31 +443,31 @@ def full_download_1(ctrl: str, settings: dict) -> None:
     logger.debug(_("Enter full_download_1: %s"), ctrl)
     with (
         StorePostgresql(
-            settings["site"]["name"],
-            settings["database"]["enabled"],
-            settings["database"]["db_user"],
-            settings["database"]["db_pw"],
-            settings["database"]["db_host"],
-            settings["database"]["db_port"],
-            settings["database"]["db_name"],
-            settings["database"]["db_schema_import"],
-            settings["database"]["db_schema_vn"],
-            settings["database"]["db_group"],
-            settings["database"]["db_out_proj"],
-            settings["database"].get("db_sslmode", "prefer"),
+            settings["SITE"]["NAME"],
+            settings["DATABASE"]["ENABLED"],
+            settings["DATABASE"]["DB_USER"],
+            settings["DATABASE"]["DB_PW"],
+            settings["DATABASE"]["DB_HOST"],
+            settings["DATABASE"]["DB_PORT"],
+            settings["DATABASE"]["DB_NAME"],
+            settings["DATABASE"]["DB_SCHEMA_IMPORT"],
+            settings["DATABASE"]["DB_SCHEMA_VN"],
+            settings["DATABASE"]["DB_GROUP"],
+            settings["DATABASE"]["DB_OUT_PROJ"],
+            settings["DATABASE"].get("DB_SSLMODE", "prefer"),
         ) as store_pg,
-        StoreFile(settings["file"]["enabled"], settings["file"]["file_store"]) as store_f,
+        StoreFile(settings["FILE"]["ENABLED"], settings["FILE"]["FILE_STORE"]) as store_f,
     ):
         store_all = StoreAll(
-            settings["database"]["enabled"], settings["file"]["enabled"], db_backend=store_pg, file_backend=store_f
+            settings["DATABASE"]["ENABLED"], settings["FILE"]["ENABLED"], db_backend=store_pg, file_backend=store_f
         )
-        if settings["controler"][ctrl]["enabled"]:
+        if settings["CONTROLER"][ctrl]["ENABLED"]:
             logger.info(
                 _("Starting download using controler %s"),
                 ctrl,
             )
         if ctrl == "observations":
-            taxo_exclude = list(key for key, value in settings["filter"]["taxo_download"].items() if value is False)
+            taxo_exclude = list(key for key, value in settings["FILTER"]["TAXO_DOWNLOAD"].items() if value is False)
             logger.info(_("Excluded taxo_groups: %s"), taxo_exclude)
             CTRL_DEFS[ctrl](
                 site=settings["SITE"]["name"],
@@ -488,30 +488,30 @@ def full_download_1(ctrl: str, settings: dict) -> None:
                 db_out_proj=settings["DATABASE"]["db_out_proj"],
                 db_sslmode=settings["DATABASE"].get("db_sslmode", "prefer"),
                 backend=store_all,
-                start_date=settings["filter"].get("start_date", None),
-                end_date=settings["filter"].get("end_date", None),
-                type_date=settings["filter"].get("type_date", "sighting"),
-                max_list_length=settings["tuning"]["max_list_length"],
-                max_retry=settings["tuning"]["max_retry"],
-                max_requests=settings["tuning"]["max_requests"],
-                max_chunks=settings["tuning"]["max_chunks"],
-                unavailable_delay=settings["tuning"]["unavailable_delay"],
-                retry_delay=settings["tuning"]["retry_delay"],
-                pid_kp=settings["tuning"]["pid_kp"],
-                pid_ki=settings["tuning"]["pid_ki"],
-                pid_kd=settings["tuning"]["pid_kd"],
-                pid_setpoint=settings["tuning"]["pid_setpoint"],
-                pid_limit_min=settings["tuning"]["pid_limit_min"],
-                pid_limit_max=settings["tuning"]["pid_limit_max"],
-                pid_delta_days=settings["tuning"]["pid_delta_days"],
+                start_date=settings["FILTER"].get("START_DATE", None),
+                end_date=settings["FILTER"].get("END_DATE", None),
+                type_date=settings["FILTER"].get("TYPE_DATE", "sighting"),
+                max_list_length=settings["TUNING"]["MAX_LIST_LENGTH"],
+                max_retry=settings["TUNING"]["MAX_RETRY"],
+                max_requests=settings["TUNING"]["MAX_REQUESTS"],
+                max_chunks=settings["TUNING"]["MAX_CHUNKS"],
+                unavailable_delay=settings["TUNING"]["UNAVAILABLE_DELAY"],
+                retry_delay=settings["TUNING"]["RETRY_DELAY"],
+                pid_kp=settings["TUNING"]["PID_KP"],
+                pid_ki=settings["TUNING"]["PID_KI"],
+                pid_kd=settings["TUNING"]["PID_KD"],
+                pid_setpoint=settings["TUNING"]["SETPOINT"],
+                pid_limit_min=settings["TUNING"]["PID_LIMIT_MIN"],
+                pid_limit_max=settings["TUNING"]["PID_LIMIT_MAX"],
+                pid_delta_days=settings["TUNING"]["PID_DELTA_DAYS"],
             ).store(
                 taxo_groups_ex=taxo_exclude,
-                territorial_unit_ids=settings["filter"]["territorial_unit_ids"],
+                territorial_unit_ids=settings["FILTER"]["TERRITORIAL_UNIT_IDS"],
             )
         elif (ctrl == "local_admin_units") or (ctrl == "places"):
             logger.info(
                 _("Included territorial_unit_ids: %s"),
-                settings["filter"]["territorial_unit_ids"],
+                settings["FILTER"]["TERRITORIAL_UNIT_IDS"],
             )
             CTRL_DEFS[ctrl](
                 site=settings["SITE"]["name"],
@@ -522,7 +522,7 @@ def full_download_1(ctrl: str, settings: dict) -> None:
                 client_secret=settings["SITE"]["client_secret"],
                 backend=store_all,
             ).store(
-                territorial_unit_ids=settings["filter"]["territorial_unit_ids"],
+                territorial_unit_ids=settings["FILTER"]["TERRITORIAL_UNIT_IDS"],
             )
         else:
             CTRL_DEFS[ctrl](
@@ -592,33 +592,33 @@ def increment_download_1(ctrl: str, settings: dict) -> None:
     logger.debug(_("Enter increment_download_1: %s"), ctrl)
     with (
         StorePostgresql(
-            settings["site"]["name"],
-            settings["database"]["enabled"],
-            settings["database"]["db_user"],
-            settings["database"]["db_pw"],
-            settings["database"]["db_host"],
-            settings["database"]["db_port"],
-            settings["database"]["db_name"],
-            settings["database"]["db_schema_import"],
-            settings["database"]["db_schema_vn"],
-            settings["database"]["db_group"],
-            settings["database"]["db_out_proj"],
-            settings["database"].get("db_sslmode", "prefer"),
+            settings["SITE"]["NAME"],
+            settings["DATABASE"]["ENABLED"],
+            settings["DATABASE"]["DB_USER"],
+            settings["DATABASE"]["DB_PW"],
+            settings["DATABASE"]["DB_HOST"],
+            settings["DATABASE"]["DB_PORT"],
+            settings["DATABASE"]["DB_NAME"],
+            settings["DATABASE"]["DB_SCHEMA_IMPORT"],
+            settings["DATABASE"]["DB_SCHEMA_VN"],
+            settings["DATABASE"]["DB_GROUP"],
+            settings["DATABASE"]["DB_OUT_PROJ"],
+            settings["DATABASE"].get("DB_SSLMODE", "prefer"),
         ) as store_pg,
-        StoreFile(settings["file"]["enabled"], settings["file"]["file_store"]) as store_f,
+        StoreFile(settings["FILE"]["ENABLED"], settings["FILE"]["FILE_STORE"]) as store_f,
     ):
         store_all = StoreAll(
-            settings["database"]["enabled"], settings["file"]["enabled"], db_backend=store_pg, file_backend=store_f
+            settings["DATABASE"]["ENABLED"], settings["FILE"]["ENABLED"], db_backend=store_pg, file_backend=store_f
         )
-        if settings["controler"][ctrl]["enabled"]:
+        if settings["CONTROLER"][ctrl]["ENABLED"]:
             logger.info(
                 _("%s => Starting incremental download using controler %s"),
-                settings["site"]["name"],
+                settings["SITE"]["NAME"],
                 ctrl,
             )
 
         if ctrl == "observations":
-            taxo_exclude = list(key for key, value in settings["filter"]["taxo_download"].items() if value is False)
+            taxo_exclude = list(key for key, value in settings["FILTER"]["TAXO_DOWNLOAD"].items() if value is False)
             logger.info(_("Excluded taxo_groups: %s"), taxo_exclude)
             CTRL_DEFS[ctrl](
                 site=settings["SITE"]["name"],
@@ -639,22 +639,22 @@ def increment_download_1(ctrl: str, settings: dict) -> None:
                 db_out_proj=settings["DATABASE"]["db_out_proj"],
                 db_sslmode=settings["DATABASE"].get("db_sslmode", "prefer"),
                 backend=store_all,
-                start_date=settings["filter"].get("start_date", None),
-                end_date=settings["filter"].get("end_date", None),
-                type_date=settings["filter"].get("type_date", "sighting"),
-                max_list_length=settings["tuning"]["max_list_length"],
-                max_retry=settings["tuning"]["max_retry"],
-                max_requests=settings["tuning"]["max_requests"],
-                max_chunks=settings["tuning"]["max_chunks"],
-                unavailable_delay=settings["tuning"]["unavailable_delay"],
-                retry_delay=settings["tuning"]["retry_delay"],
-                pid_kp=settings["tuning"]["pid_kp"],
-                pid_ki=settings["tuning"]["pid_ki"],
-                pid_kd=settings["tuning"]["pid_kd"],
-                pid_setpoint=settings["tuning"]["pid_setpoint"],
-                pid_limit_min=settings["tuning"]["pid_limit_min"],
-                pid_limit_max=settings["tuning"]["pid_limit_max"],
-                pid_delta_days=settings["tuning"]["pid_delta_days"],
+                start_date=settings["FILTER"].get("START_DATE", None),
+                end_date=settings["FILTER"].get("END_DATE", None),
+                type_date=settings["FILTER"].get("TYPE_DATE", "sighting"),
+                max_list_length=settings["TUNING"]["MAX_LIST_LENGTH"],
+                max_retry=settings["TUNING"]["MAX_RETRY"],
+                max_requests=settings["TUNING"]["MAX_REQUESTS"],
+                max_chunks=settings["TUNING"]["MAX_CHUNKS"],
+                unavailable_delay=settings["TUNING"]["UNAVAILABLE_DELAY"],
+                retry_delay=settings["TUNING"]["RETRY_DELAY"],
+                pid_kp=settings["TUNING"]["PID_KP"],
+                pid_ki=settings["TUNING"]["PID_KI"],
+                pid_kd=settings["TUNING"]["PID_KD"],
+                pid_setpoint=settings["TUNING"]["SETPOINT"],
+                pid_limit_min=settings["TUNING"]["PID_LIMIT_MIN"],
+                pid_limit_max=settings["TUNING"]["PID_LIMIT_MAX"],
+                pid_delta_days=settings["TUNING"]["PID_DELTA_DAYS"],
             ).update(
                 taxo_groups_ex=taxo_exclude,
             )
@@ -668,7 +668,7 @@ def increment_download_1(ctrl: str, settings: dict) -> None:
                 client_secret=settings["SITE"]["client_secret"],
                 backend=store_all,
             ).update(
-                territorial_unit_ids=settings["filter"]["territorial_unit_ids"],
+                territorial_unit_ids=settings["FILTER"]["TERRITORIAL_UNIT_IDS"],
             )
         elif ctrl == "local_admin_units":
             CTRL_DEFS[ctrl](
@@ -680,7 +680,7 @@ def increment_download_1(ctrl: str, settings: dict) -> None:
                 client_secret=settings["SITE"]["client_secret"],
                 backend=store_all,
             ).store(
-                territorial_unit_ids=settings["filter"]["territorial_unit_ids"],
+                territorial_unit_ids=settings["FILTER"]["TERRITORIAL_UNIT_IDS"],
             )
         else:
             CTRL_DEFS[ctrl](
