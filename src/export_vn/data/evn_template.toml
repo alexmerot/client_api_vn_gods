@@ -27,6 +27,15 @@ enabled = false
 day_of_week = 4
 hour = 23
 
+[controler.fields]
+# Enable/disable download from this controler.
+enabled = false
+
+[controler.fields.schedule]
+# Schedule in year/month/day/week/day_of_week/hour/minute.
+day_of_week = 4
+hour = 23
+
 [controler.local_admin_units]
 # Enable/disable download from this controler.
 enabled = false
@@ -63,6 +72,15 @@ hour = 6
 enabled = false
 
 [controler.places.schedule]
+# Schedule in year/month/day/week/day_of_week/hour/minute.
+day_of_week = 3
+hour = 23
+
+[controler.species]
+# Enable/disable download from this controler.
+enabled = false
+
+[controler.species.schedule]
 # Schedule in year/month/day/week/day_of_week/hour/minute.
 day_of_week = 3
 hour = 23
