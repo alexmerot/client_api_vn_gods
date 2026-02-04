@@ -55,6 +55,9 @@ RUN chown -R appuser:appuser /app && chmod -R 755 /app
 # Create config directory for bind mounts
 RUN mkdir -p /app/config
 
+# Configure bash prompt for better user experience
+ENV PS1='\u@\h:\w\$ '
+
 # Switch to non-root user (can be overridden with --user flag)
 USER appuser
 
