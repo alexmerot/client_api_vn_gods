@@ -441,6 +441,11 @@ def migrate(cfg, sql_quiet, client_min_message):
 def full_download_1(ctrl: str, settings: dict) -> None:
     """Downloads from a single controler."""
     logger.debug(_("Enter full_download_1: %s"), ctrl)
+    logger.debug("Settings top-level keys: %s", list(settings.keys()))
+    if "SITE" in settings:
+        logger.debug("SITE keys: %s", list(settings["SITE"].keys()))
+    elif "site" in settings:
+        logger.debug("site keys: %s", list(settings["site"].keys()))
     with (
         StorePostgresql(
             settings["SITE"]["NAME"],
