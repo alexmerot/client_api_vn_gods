@@ -45,16 +45,17 @@ RUN useradd -r -m -d /home/appuser -U appuser
 WORKDIR /app
 COPY --from=builder /app /app
 
-RUN mkdir -p /home/appuser/config
-
 # Activate the virtual environment
 ENV VIRTUAL_ENV=/app/.venv
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 # Set permissions for the non-root user
-RUN chown -R appuser:appuser /app && chown -R appuser:appuser /home/appuser
+RUN chown -R appuser:appuser /app && chmod -R 755 /app
 
-# Switch to non-root user
+# Create config directory for bind mounts
+RUN mkdir -p /app/config
+
+# Switch to non-root user (can be overridden with --user flag)
 USER appuser
 
 # Default command
