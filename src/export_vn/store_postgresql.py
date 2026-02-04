@@ -302,6 +302,7 @@ class PostgresqlUtils:
         self._create_table(
             "observations_json",
             Column("id", Integer, nullable=False, index=True),
+            Column("insee", String, nullable=False),
             Column("site", String, nullable=False),
             Column("item", JSONB, nullable=False),
             Column("update_ts", Integer, nullable=False),
