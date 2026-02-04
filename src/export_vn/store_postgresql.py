@@ -169,6 +169,7 @@ class PostgresqlUtils:
         db_schema_import: str,
         db_schema_vn: str,
         db_group: str,
+        db_sslmode: str = "prefer",
     ):
         self._db_enabled = db_enabled
         self._db_user = db_user
@@ -179,6 +180,7 @@ class PostgresqlUtils:
         self._db_schema_import = db_schema_import
         self._db_schema_vn = db_schema_vn
         self._db_group = db_group
+        self._db_sslmode = db_sslmode
 
     # ----------------
     # Internal methods
@@ -491,6 +493,7 @@ class PostgresqlUtils:
                 "host": self._db_host,
                 "port": self._db_port,
                 "database": self._db_name,
+                "query": {"sslmode": self._db_sslmode},
             }
 
             # Connect to database
@@ -578,6 +581,7 @@ class PostgresqlUtils:
                 "host": self._db_host,
                 "port": self._db_port,
                 "database": self._db_name,
+                "query": {"sslmode": self._db_sslmode},
             }
 
             # Connect and set path to include VN import schema
@@ -617,6 +621,7 @@ class PostgresqlUtils:
                 "host": self._db_host,
                 "port": self._db_port,
                 "database": self._db_name,
+                "query": {"sslmode": self._db_sslmode},
             }
 
             # Connect and set path to include VN import schema
@@ -656,6 +661,7 @@ class Postgresql:
         db_schema_vn: str,
         db_group: str,
         db_out_proj: str,
+        db_sslmode: str = "prefer",
     ):
         self._site = site
         self._db_enabled = db_enabled
@@ -668,6 +674,7 @@ class Postgresql:
         self._db_schema_vn = db_schema_vn
         self._db_group = db_group
         self._db_out_proj = db_out_proj
+        self._db_sslmode = db_sslmode
 
         if self._db_enabled:
             # Initialize interface to Postgresql DB
@@ -678,6 +685,7 @@ class Postgresql:
                 "host": self._db_host,
                 "port": self._db_port,
                 "database": self._db_name,
+                "query": {"sslmode": self._db_sslmode},
             }
 
             dbschema = self._db_schema_import
