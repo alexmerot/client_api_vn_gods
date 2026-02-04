@@ -480,6 +480,7 @@ class Observations(DownloadVn):
         pid_limit_min: int = 5,
         pid_limit_max: int = 2000,
         pid_delta_days: int = 15,
+        db_sslmode: str = "prefer",
     ) -> None:
         self._site = site
         self._user_email = user_email
@@ -497,6 +498,7 @@ class Observations(DownloadVn):
         self._db_schema_vn = db_schema_vn
         self._db_group = db_group
         self._db_out_proj = db_out_proj
+        self._db_sslmode = db_sslmode
         self._start_date = start_date
         self._end_date = end_date
         self._type_date = type_date
@@ -568,6 +570,7 @@ class Observations(DownloadVn):
                     self._db_schema_vn,
                     self._db_group,
                     self._db_out_proj,
+                    self._db_sslmode,
                 ).read("territorial_units")
             if (self._t_units is None) or (len(self._t_units) == 0):
                 # No territorial_units available, read from API
@@ -727,6 +730,7 @@ class Observations(DownloadVn):
                     self._db_schema_vn,
                     self._db_group,
                     self._db_out_proj,
+                    self._db_sslmode,
                 ).read("territorial_units")
             if (self._t_units is None) or (len(self._t_units) == 0):
                 # No territorial_units available, read from API
@@ -1212,6 +1216,7 @@ class Places(DownloadVn):
                     self._db_schema_vn,
                     self._db_group,
                     self._db_out_proj,
+                    self._db_sslmode,
                 ).read("local_admin_units")
             if (self._l_a_units is None) or (len(self._l_a_units) == 0):
                 # No local_admin_units available, read from API

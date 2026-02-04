@@ -227,6 +227,8 @@ db_host = "localhost"
 db_port = 5432
 # Database name.
 db_name = "faune_xxx"
+# SSL mode for database connection (disable, allow, prefer, require, verify-ca, verify-full).
+db_sslmode = "prefer"
 # Database schema inside db_name database, for imported JSON data.
 db_schema_import = "import"
 # Database schema inside db_name database, for columns extracted from JSON.
