@@ -29,8 +29,8 @@ FROM python:3.14.2-slim-trixie
 ENV TZ=Europe/Paris
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-# Set locale to French
-RUN apt-get update && apt-get install -y locales && \
+# Set locale to French and install PostgreSQL client
+RUN apt-get update && apt-get install -y locales postgresql-client && \
     sed -i '/fr_FR.UTF-8/s/^# //g' /etc/locale.gen && \
     locale-gen fr_FR.UTF-8 && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
@@ -45,16 +45,21 @@ RUN useradd -r -m -d /home/appuser -U appuser
 WORKDIR /app
 COPY --from=builder /app /app
 
-RUN mkdir -p /home/appuser/config
-
 # Activate the virtual environment
 ENV VIRTUAL_ENV=/app/.venv
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 # Set permissions for the non-root user
-RUN chown -R appuser:appuser /app && chown -R appuser:appuser /home/appuser
+RUN chown -R appuser:appuser /app && chmod -R 755 /app
 
-# Switch to non-root user
+# Create config directory for bind mounts
+RUN mkdir -p /app/config
+
+# Configure bash prompt for better user experience
+RUN echo 'export PS1="appuser@\h:\w\$ "' > /app/.bashrc && \
+    chmod 644 /app/.bashrc
+
+# Switch to non-root user (can be overridden with --user flag)
 USER appuser
 
 # Default command

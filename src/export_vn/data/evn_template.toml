@@ -27,6 +27,15 @@ enabled = false
 day_of_week = 4
 hour = 23
 
+[controler.fields]
+# Enable/disable download from this controler.
+enabled = false
+
+[controler.fields.schedule]
+# Schedule in year/month/day/week/day_of_week/hour/minute.
+day_of_week = 4
+hour = 23
+
 [controler.local_admin_units]
 # Enable/disable download from this controler.
 enabled = false
@@ -63,6 +72,15 @@ hour = 6
 enabled = false
 
 [controler.places.schedule]
+# Schedule in year/month/day/week/day_of_week/hour/minute.
+day_of_week = 3
+hour = 23
+
+[controler.species]
+# Enable/disable download from this controler.
+enabled = false
+
+[controler.species.schedule]
 # Schedule in year/month/day/week/day_of_week/hour/minute.
 day_of_week = 3
 hour = 23
@@ -173,12 +191,12 @@ TAXO_GROUP_FORMICOIDEA = false
 [site]
 # VisioNature site access parameters.
 
-[site.tff]
-# Sites parameters for tff.
 # Enable download from this site.
 enabled = true
+# Site name (short identifier).
+name = "tff"
 # Site URL.
-site = "https://www.faune-xxx.org/"
+url = "https://www.faune-xxx.org/"
 # Username.
 user_email = "nom.prenom@example.net"
 # User password.
@@ -211,6 +229,8 @@ db_host = "localhost"
 db_port = 5432
 # Database name.
 db_name = "faune_xxx"
+# SSL mode for database connection (disable, allow, prefer, require, verify-ca, verify-full).
+db_sslmode = "prefer"
 # Database schema inside db_name database, for imported JSON data.
 db_schema_import = "import"
 # Database schema inside db_name database, for columns extracted from JSON.

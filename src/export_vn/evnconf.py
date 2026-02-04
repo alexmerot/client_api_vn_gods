@@ -225,6 +225,7 @@ _ConfSchema = Map({
         Optional("db_host", default="localhost"): Str(),
         Optional("db_port", default=5432): Int(),
         "db_name": Str(),
+        Optional("db_sslmode", default="prefer"): Str(),
         "db_schema_import": Str(),
         "db_schema_vn": Str(),
         "db_group": Str(),
@@ -373,6 +374,7 @@ class EvnSiteConf:
         self._db_host = ""  # type: str
         self._db_port = ""  # type: str
         self._db_name = ""  # type: str
+        self._db_sslmode = "prefer"  # type: str
         self._db_schema_import = ""  # type: str
         self._db_schema_vn = ""  # type: str
         self._db_group = ""  # type: str
@@ -385,6 +387,7 @@ class EvnSiteConf:
             self._db_host = config["database"]["db_host"]  # type: str
             self._db_port = str(config["database"]["db_port"])  # type: str
             self._db_name = config["database"]["db_name"]  # type: str
+            self._db_sslmode = config["database"]["db_sslmode"]  # type: str
             self._db_schema_import = config["database"]["db_schema_import"]  # type: str
             self._db_schema_vn = config["database"]["db_schema_vn"]  # type: str
             self._db_group = config["database"]["db_group"]  # type: str
@@ -526,6 +529,11 @@ class EvnSiteConf:
     def db_name(self) -> str:
         """Return database name."""
         return self._db_name
+
+    @property
+    def db_sslmode(self) -> str:
+        """Return database SSL mode."""
+        return self._db_sslmode
 
     @property
     def db_schema_import(self) -> str:

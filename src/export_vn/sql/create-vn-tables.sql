@@ -602,6 +602,7 @@ CREATE TABLE {{ db_schema_vn }}.observations (
     timing              TIMESTAMP,
     id_place            INTEGER,
     place               TEXT,
+    insee               TEXT,
     coord_lat           FLOAT,
     coord_lon           FLOAT,
     coord_x_local       FLOAT,
@@ -704,6 +705,7 @@ CREATE OR REPLACE FUNCTION update_observations() RETURNS TRIGGER AS $$
             timing            = to_timestamp(CAST(((NEW.item -> 'observers') -> 0) #>> '{timing,@timestamp}' AS DOUBLE PRECISION)),
             id_place          = CAST(NEW.item #>> '{place,@id}' AS INTEGER),
             place             = NEW.item #>> '{place,name}',
+            insee             = NEW.insee,
             coord_lat         = CAST(((NEW.item -> 'observers') -> 0) ->> 'coord_lat' AS FLOAT),
             coord_lon         = CAST(((NEW.item -> 'observers') -> 0) ->> 'coord_lon' AS FLOAT),
             coord_x_local     = CAST(((NEW.item -> 'observers') -> 0) ->> 'coord_x_local' AS FLOAT),
@@ -732,7 +734,7 @@ CREATE OR REPLACE FUNCTION update_observations() RETURNS TRIGGER AS $$
         IF NOT FOUND THEN
             -- Inserting data on src_vn.observations when raw data is inserted
             INSERT INTO {{ db_schema_vn }}.observations (site, id_sighting, id_universal, uuid, id_form_universal,
-                                             id_species, taxonomy, date, date_year, timing, id_place, place,
+                                             id_species, taxonomy, date, date_year, timing, id_place, place, insee,
                                              coord_lat, coord_lon, coord_x_local, coord_y_local, precision, source, estimation_code,
                                              count, atlas_code, altitude, project_code, hidden, admin_hidden, observer_uid, details,
                                              behaviours, comment, hidden_comment, confirmed_by, mortality, death_cause2, insert_date, update_date)
@@ -750,6 +752,7 @@ CREATE OR REPLACE FUNCTION update_observations() RETURNS TRIGGER AS $$
                 to_timestamp(CAST(((NEW.item -> 'observers') -> 0) #>> '{timing,@timestamp}' AS DOUBLE PRECISION)),
                 CAST(NEW.item #>> '{place,@id}' AS INTEGER),
                 NEW.item #>> '{place,name}',
+                NEW.insee,
                 CAST(((NEW.item -> 'observers') -> 0) ->> 'coord_lat' AS FLOAT),
                 CAST(((NEW.item -> 'observers') -> 0) ->> 'coord_lon' AS FLOAT),
                 CAST(((NEW.item -> 'observers') -> 0) ->> 'coord_x_local' AS FLOAT),
@@ -779,7 +782,7 @@ CREATE OR REPLACE FUNCTION update_observations() RETURNS TRIGGER AS $$
     ELSIF (TG_OP = 'INSERT') THEN
         -- Inserting data on src_vn.observations when raw data is inserted
         INSERT INTO {{ db_schema_vn }}.observations (site, id_sighting, id_universal, uuid, id_form_universal,
-                                         id_species, taxonomy, date, date_year, timing, id_place, place,
+                                         id_species, taxonomy, date, date_year, timing, id_place, place, insee,
                                          coord_lat, coord_lon, coord_x_local, coord_y_local, source, precision, estimation_code,
                                          count, atlas_code, altitude, project_code, hidden, admin_hidden, observer_uid, details,
                                          behaviours, comment, hidden_comment, confirmed_by, mortality, death_cause2, insert_date, update_date)
@@ -797,6 +800,7 @@ CREATE OR REPLACE FUNCTION update_observations() RETURNS TRIGGER AS $$
             to_timestamp(CAST(((NEW.item -> 'observers') -> 0) #>> '{timing,@timestamp}' AS DOUBLE PRECISION)),
             CAST(NEW.item #>> '{place,@id}' AS INTEGER),
             NEW.item #>> '{place,name}',
+            NEW.insee,
             CAST(((NEW.item -> 'observers') -> 0) ->> 'coord_lat' AS FLOAT),
             CAST(((NEW.item -> 'observers') -> 0) ->> 'coord_lon' AS FLOAT),
             CAST(((NEW.item -> 'observers') -> 0) ->> 'coord_x_local' AS FLOAT),
