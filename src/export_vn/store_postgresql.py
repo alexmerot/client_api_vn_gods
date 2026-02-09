@@ -147,7 +147,12 @@ def store_1_observation(item):
     )
     do_update_stmt = insert_stmt.on_conflict_do_update(
         constraint=metadata.primary_key,
-        set_=dict(update_ts=update_date, item=elem, id_form_universal=item.form),  # noqa: C408
+        set_=dict(
+            update_ts=update_date,
+            item=elem,
+            id_form_universal=item.form,
+            insee=elem["place"].get("insee", None),
+        ),  # noqa: C408
         where=(metadata.c.update_ts < update_date),
     )
 
