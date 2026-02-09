@@ -740,6 +740,142 @@ class Postgresql:
             logger.info(_("Closing connection to database %s"), self._db_name)
             self._conn.close()
 
+    def update_observations_insee(self):
+        """Extract and update insee field from JSONB item column.
+        
+        This extracts the insee from the JSON place object and updates the insee column.
+        Needed because short_version API responses don't include insee in place object.
+        For incremental updates with API bugs, the insee might be missing from the item too.
+        """
+        if not self._db_enabled:
+            return
+        
+        logger.info(_("Extracting insee from observations JSONB item"))
+        
+        try:
+            # First, try to extract insee from JSONB item where it exists
+            sql = f"""
+                UPDATE {self._db_schema_import}.observations_json
+                SET insee = item #>> '{{place,insee}}'
+                WHERE site = '{self._site}'
+                  AND insee IS NULL
+                  AND item #>> '{{place,insee}}' IS NOT NULL
+            """
+            result = self._conn.execute(sql)
+            rows_updated = result.rowcount if hasattr(result, 'rowcount') else 0
+            logger.info(_("Extracted insee from JSONB for %d observations"), rows_updated)
+            
+            # Second, for rows still without insee, look up from places_json/local_admin_units_json
+            # via id_place from the JSONB
+            sql_lookup = f"""
+                UPDATE {self._db_schema_import}.observations_json o
+                SET insee = lau.item->>'insee'
+                FROM {self._db_schema_import}.places_json p
+                INNER JOIN {self._db_schema_import}.local_admin_units_json lau 
+                    ON lau.id = CAST(p.item->>'id_commune' AS INTEGER)
+                    AND lau.site = p.site
+                WHERE o.insee IS NULL
+                  AND p.id = CAST(o.item #>> '{{place,@id}}' AS INTEGER)
+                  AND p.site = o.site
+                  AND o.site = '{self._site}'
+            """
+            result2 = self._conn.execute(sql_lookup)
+            rows_updated2 = result2.rowcount if hasattr(result2, 'rowcount') else 0
+            logger.info(_("Looked up insee from places for %d observations"), rows_updated2)
+            
+        except Exception as e:
+            logger.warning(_("Failed to extract/update observations insee: %s"), str(e))
+    
+    def filter_observations_by_insee(self, department_codes):
+        """Delete observations and forms not in the specified department codes.
+        
+        This filters the raw JSON tables (observations_json, forms_json) using places_json
+        and local_admin_units_json to determine which observations are outside the departments.
+        The DELETE triggers will then clean up the normalized tables automatically.
+        
+        Parameters
+        ----------
+        department_codes : list of str
+            List of 2-digit French department codes to keep (e.g., ['38', '69', '01']).
+            Observations and forms with insee codes outside these departments are deleted.
+        """
+        if not self._db_enabled or not department_codes:
+            return
+        
+        logger.info(_("Filtering observations_json and forms_json by %d department codes"), len(department_codes))
+        
+        try:
+            # Build department list for SQL
+            dept_list = "','" .join(str(code) for code in department_codes)
+            
+            # Strategy: Delete observations where the place's commune is outside allowed departments
+            # Join: observations_json -> places_json -> local_admin_units_json to filter
+            
+            # First approach: Filter by insee field if populated
+            sql_insee = f"""
+                DELETE FROM {self._db_schema_import}.observations_json
+                WHERE site = '{self._site}'
+                  AND insee IS NOT NULL
+                  AND LEFT(insee, 2) NOT IN ('{dept_list}')
+            """
+            result1 = self._conn.execute(sql_insee)
+            rows_deleted_insee = result1.rowcount if hasattr(result1, 'rowcount') else 0
+            logger.info(_("Deleted %d observations by insee field"), rows_deleted_insee)
+            
+            # Second approach: Filter by joining with places_json and local_admin_units_json
+            # For observations where insee is NULL, check via place lookup
+            sql_join = f"""
+                DELETE FROM {self._db_schema_import}.observations_json o
+                WHERE o.site = '{self._site}'
+                  AND o.insee IS NULL
+                  AND EXISTS (
+                    SELECT 1 
+                    FROM {self._db_schema_import}.places_json p
+                    INNER JOIN {self._db_schema_import}.local_admin_units_json lau
+                      ON lau.id = CAST(p.item->>'id_commune' AS INTEGER)
+                      AND lau.site = p.site
+                    WHERE p.id = CAST(o.item #>> '{{place,@id}}' AS INTEGER)
+                      AND p.site = o.site
+                      AND LEFT(lau.item->>'insee', 2) NOT IN ('{dept_list}')
+                  )
+            """
+            result2 = self._conn.execute(sql_join)
+            rows_deleted_join = result2.rowcount if hasattr(result2, 'rowcount') else 0
+            logger.info(_("Deleted %d observations by place lookup"), rows_deleted_join)
+            
+            # Delete orphaned forms (forms without any remaining observations)
+            sql_forms = f"""
+                DELETE FROM {self._db_schema_import}.forms_json f
+                WHERE f.site = '{self._site}'
+                  AND f.item->>'id_form_universal' IS NOT NULL
+                  AND NOT EXISTS (
+                    SELECT 1 FROM {self._db_schema_import}.observations_json o
+                    WHERE o.id_form_universal = f.item->>'id_form_universal'
+                  )
+            """
+            result_forms = self._conn.execute(sql_forms)
+            forms_deleted = result_forms.rowcount if hasattr(result_forms, 'rowcount') else 0
+            logger.info(_("Deleted %d orphaned forms"), forms_deleted)
+            
+            total_deleted = rows_deleted_insee + rows_deleted_join
+            logger.info(_("Total: deleted %d observations and %d forms outside departments"), 
+                       total_deleted, forms_deleted)
+            
+        except Exception as e:
+            logger.warning(_("Failed to filter observations by department: %s"), str(e))
+    
+    def set_insee_filter(self, department_codes):
+        """Configure department filter to be applied after import.
+        
+        Parameters
+        ----------
+        department_codes : list of str
+            List of 2-digit French department codes to keep (e.g., ['38', '69', '01']).
+            Can be extracted from territorial_unit_ids configuration.
+        """
+        self._insee_filter_list = department_codes
+        logger.debug(_("Set department filter with %d codes"), len(department_codes) if department_codes else 0)
+
     @property
     def version(self):
         """Return version."""
@@ -781,6 +917,24 @@ class ReadPostgresql(Postgresql):
 
 class StorePostgresql(Postgresql):
     """Provides store to Postgresql database method."""
+
+    def __init__(self, *args, **kwargs):
+        """Initialize and track if observations were stored."""
+        super().__init__(*args, **kwargs)
+        self._observations_stored = False
+        self._insee_filter_list = None  # Optional list of INSEE codes to keep
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """Finalize connections and batch update observations insee if needed."""
+        if self._db_enabled:
+            # Batch update insee for observations if any were stored
+            if self._observations_stored:
+                self.update_observations_insee()
+                # Filter by INSEE if filter list is configured
+                if self._insee_filter_list:
+                    self.filter_observations_by_insee(self._insee_filter_list)
+            logger.info(_("Closing connection to database %s"), self._db_name)
+            self._conn.close()
 
     # ----------------
     # Internal methods
@@ -1024,6 +1178,8 @@ class StorePostgresql(Postgresql):
                     )
 
         logger.debug(_("Stored %d observations or forms to database"), nb_obs)
+        # Mark that observations were stored
+        self._observations_stored = True
         return nb_obs
 
     def _store_observers(self, controler, items_dict):
