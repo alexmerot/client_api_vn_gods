@@ -761,6 +761,8 @@ class Postgresql:
         This extracts the insee from the JSON place object and updates the insee column.
         Needed because short_version API responses don't include insee in place object.
         For incremental updates with API bugs, the insee might be missing from the item too.
+        
+        NOTE: This requires that places_json and local_admin_units_json tables are populated first.
         """
         if not self._db_enabled:
             return
@@ -768,6 +770,16 @@ class Postgresql:
         logger.info(_("Extracting insee from observations JSONB item"))
         
         try:
+            # Count observations needing insee
+            sql_count = f"""
+                SELECT COUNT(*) 
+                FROM {self._db_schema_import}.observations_json 
+                WHERE site = '{self._site}' AND insee IS NULL
+            """
+            result_count = self._conn.execute(sql_count)
+            total_null = result_count.scalar()
+            logger.info(_("Found %d observations with NULL insee"), total_null)
+            
             # First, try to extract insee from JSONB item where it exists
             sql = f"""
                 UPDATE {self._db_schema_import}.observations_json
@@ -775,10 +787,26 @@ class Postgresql:
                 WHERE site = '{self._site}'
                   AND insee IS NULL
                   AND item #>> '{{place,insee}}' IS NOT NULL
+                  AND item #>> '{{place,insee}}' != ''
             """
             result = self._conn.execute(sql)
             rows_updated = result.rowcount if hasattr(result, 'rowcount') else 0
             logger.info(_("Extracted insee from JSONB for %d observations"), rows_updated)
+            
+            # Check if places_json table has data
+            sql_places_check = f"""
+                SELECT COUNT(*) 
+                FROM {self._db_schema_import}.places_json 
+                WHERE site = '{self._site}'
+            """
+            result_places = self._conn.execute(sql_places_check)
+            places_count = result_places.scalar()
+            
+            if places_count == 0:
+                logger.warning(_("places_json table is empty for site %s - cannot lookup insee from places. Download places data first."), self._site)
+                return
+            
+            logger.info(_("Found %d places in places_json for site %s"), places_count, self._site)
             
             # Second, for rows still without insee, look up from places_json/local_admin_units_json
             # via id_place from the JSONB
@@ -786,17 +814,27 @@ class Postgresql:
                 UPDATE {self._db_schema_import}.observations_json o
                 SET insee = lau.item->>'insee'
                 FROM {self._db_schema_import}.places_json p
-                INNER JOIN {self._db_schema_import}.local_admin_units_json lau 
-                    ON lau.id = CAST(p.item->>'id_commune' AS INTEGER)
+                JOIN {self._db_schema_import}.local_admin_units_json lau 
+                    ON lau.id = (p.item->>'id_commune')::INTEGER
                     AND lau.site = p.site
-                WHERE o.insee IS NULL
-                  AND p.id = CAST(o.item #>> '{{place,@id}}' AS INTEGER)
+                WHERE o.site = '{self._site}'
+                  AND o.insee IS NULL
                   AND p.site = o.site
-                  AND o.site = '{self._site}'
+                  AND o.item #>> '{{place,@id}}' IS NOT NULL
+                  AND p.id = (o.item #>> '{{place,@id}}')::INTEGER
+                  AND p.item->>'id_commune' IS NOT NULL
+                  AND p.item->>'id_commune' ~ '^[0-9]+$'
+                  AND lau.item->>'insee' IS NOT NULL
+                  AND lau.item->>'insee' != ''
             """
             result2 = self._conn.execute(sql_lookup)
             rows_updated2 = result2.rowcount if hasattr(result2, 'rowcount') else 0
             logger.info(_("Looked up insee from places for %d observations"), rows_updated2)
+            
+            # Final count of remaining NULL insee
+            result_final = self._conn.execute(sql_count)
+            final_null = result_final.scalar()
+            logger.info(_("Still have %d observations with NULL insee (places may not be in places_json table)"), final_null)
             
         except Exception as e:
             logger.warning(_("Failed to extract/update observations insee: %s"), str(e))
