@@ -413,6 +413,7 @@ class LocalAdminUnits(DownloadVn):
     def store(
         self,
         territorial_unit_ids=None,
+        t_units=None,
     ):
         """Download from VN by API and store json to backend.
 
@@ -421,12 +422,40 @@ class LocalAdminUnits(DownloadVn):
         Parameters
         ----------
         territorial_unit_ids : list
-            List of territorial_units to include in storage.
+            List of territorial_unit short_names (e.g., ['79', '17']) to include in storage.
+        t_units : list
+            List of territorial_units from API. If None, all territorial units are processed.
         """
         if territorial_unit_ids is not None and len(territorial_unit_ids) > 0:
-            for id_canton in territorial_unit_ids:
+            # Filter territorial_units by short_name to get the correct id fields
+            if t_units is None:
+                # Get territorial units from API if not provided
+                t_units_data = TerritorialUnitsAPI(
+                    user_email=self._api_instance._user_email,
+                    user_pw=self._api_instance._user_pw,
+                    base_url=self._api_instance._base_url,
+                    client_key=self._api_instance._client_key,
+                    client_secret=self._api_instance._client_secret,
+                    max_retry=self._api_instance._max_retry,
+                    max_requests=self._api_instance._max_requests,
+                    max_chunks=self._api_instance._max_chunks,
+                    unavailable_delay=self._api_instance._unavailable_delay,
+                    retry_delay=self._api_instance._retry_delay,
+                ).api_list()["data"]
+                t_units = [[t] for t in t_units_data]
+            
+            # Pad single digit codes with leading zero if needed
+            territorial_unit_ids = list(
+                map(lambda t_u: "0" + t_u if len(t_u) == 1 else t_u, territorial_unit_ids)
+            )
+            # Filter by short_name to get matching territorial units
+            filtered_t_units = [u for u in t_units if u[0]["short_name"] in territorial_unit_ids]
+            
+            for t_u in filtered_t_units:
+                id_canton = t_u[0]["id"]
                 logger.debug(
-                    _("Getting local_admin_units from id_canton %s, using API list"),
+                    _("Getting local_admin_units from short_name %s (id_canton %s), using API list"),
+                    t_u[0]["short_name"],
                     id_canton,
                 )
                 q_param = {"id_canton": id_canton}
@@ -1237,18 +1266,62 @@ class Places(DownloadVn):
 
         self._backend.increment_log(self._site, self._place_id, datetime.now())
         if territorial_unit_ids is not None and len(territorial_unit_ids) > 0:
-            # Get local_admin_units
-            for id_canton in territorial_unit_ids:
+            # Get territorial_units to map short_name to id
+            t_units = []
+            if self._db_enabled:
+                # Try to read from local database
+                t_units = ReadPostgresql(
+                    self._site,
+                    self._db_enabled,
+                    self._db_user,
+                    self._db_pw,
+                    self._db_host,
+                    self._db_port,
+                    self._db_name,
+                    self._db_schema_import,
+                    self._db_schema_vn,
+                    self._db_group,
+                    self._db_out_proj,
+                    self._db_sslmode,
+                ).read("territorial_units")
+            if (t_units is None) or (len(t_units) == 0):
+                # No territorial_units available, read from API
+                t_units_data = TerritorialUnitsAPI(
+                    user_email=self._user_email,
+                    user_pw=self._user_pw,
+                    base_url=self._base_url,
+                    client_key=self._client_key,
+                    client_secret=self._client_secret,
+                    max_retry=self._max_retry,
+                    max_requests=self._max_requests,
+                    max_chunks=self._max_chunks,
+                    unavailable_delay=self._unavailable_delay,
+                    retry_delay=self._retry_delay,
+                ).api_list()["data"]
+                t_units = [[t] for t in t_units_data]
+            
+            # Pad single digit codes with leading zero if needed
+            territorial_unit_ids = list(
+                map(lambda t_u: "0" + t_u if len(t_u) == 1 else t_u, territorial_unit_ids)
+            )
+            # Filter by short_name to get matching territorial units
+            filtered_t_units = [u for u in t_units if u[0]["short_name"] in territorial_unit_ids]
+            
+            # Get local_admin_units for each territorial unit
+            for t_u in filtered_t_units:
+                id_canton = t_u[0]["id"]
+                short_name = t_u[0]["short_name"]
                 # Loop on local_admin_units of the territorial_unit
                 for l_a_u in self._l_a_units[0]:
                     if l_a_u["id_canton"] == id_canton:
                         logger.info(
-                            _("Getting places from id_canton %s, id_commune %s, using API list"),
+                            _("Getting places from short_name %s (id_canton %s), id_commune %s, using API list"),
+                            short_name,
                             id_canton,
                             l_a_u["id"],
                         )
                         q_param = {"id_commune": l_a_u["id"], "get_hidden": "1"}
-                        super().store(opt_params_iter=[q_param], file_id=(id_canton + "_" + l_a_u["id"] + "_"))
+                        super().store(opt_params_iter=[q_param], file_id=(short_name + "_" + l_a_u["id"] + "_"))
         else:
             for l_a_u in self._l_a_units:
                 logger.info(
