@@ -30,7 +30,7 @@ ENV TZ=Europe/Paris
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # Set locale to French and install PostgreSQL client
-RUN apt-get update && apt-get install -y locales postgresql-client && \
+RUN apt-get update && apt-get install -y locales postgresql-client procps && \
     sed -i '/fr_FR.UTF-8/s/^# //g' /etc/locale.gen && \
     locale-gen fr_FR.UTF-8 && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
