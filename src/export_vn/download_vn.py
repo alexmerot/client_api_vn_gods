@@ -393,6 +393,16 @@ class LocalAdminUnits(DownloadVn):
         unavailable_delay: int = 600,
         retry_delay: int = 5,
     ) -> None:
+        self._user_email = user_email
+        self._user_pw = user_pw
+        self._base_url = base_url
+        self._client_key = client_key
+        self._client_secret = client_secret
+        self._max_retry = max_retry
+        self._max_requests = max_requests
+        self._max_chunks = max_chunks
+        self._unavailable_delay = unavailable_delay
+        self._retry_delay = retry_delay
         super().__init__(
             site,
             LocalAdminUnitsAPI(
@@ -431,16 +441,16 @@ class LocalAdminUnits(DownloadVn):
             if t_units is None:
                 # Get territorial units from API if not provided
                 t_units_data = TerritorialUnitsAPI(
-                    user_email=self._api_instance._user_email,
-                    user_pw=self._api_instance._user_pw,
-                    base_url=self._api_instance._base_url,
-                    client_key=self._api_instance._client_key,
-                    client_secret=self._api_instance._client_secret,
-                    max_retry=self._api_instance._max_retry,
-                    max_requests=self._api_instance._max_requests,
-                    max_chunks=self._api_instance._max_chunks,
-                    unavailable_delay=self._api_instance._unavailable_delay,
-                    retry_delay=self._api_instance._retry_delay,
+                    user_email=self._user_email,
+                    user_pw=self._user_pw,
+                    base_url=self._base_url,
+                    client_key=self._client_key,
+                    client_secret=self._client_secret,
+                    max_retry=self._max_retry,
+                    max_requests=self._max_requests,
+                    max_chunks=self._max_chunks,
+                    unavailable_delay=self._unavailable_delay,
+                    retry_delay=self._retry_delay,
                 ).api_list()["data"]
                 t_units = [[t] for t in t_units_data]
             
