@@ -656,6 +656,7 @@ def increment_download_1(ctrl: str, settings: dict) -> None:
                 pid_delta_days=settings["TUNING"].get("pid_delta_days", 10),
             ).update(
                 taxo_groups_ex=taxo_exclude,
+                territorial_unit_ids=settings["FILTER"]["territorial_unit_ids"],
             )
         elif ctrl == "places":
             CTRL_DEFS[ctrl](

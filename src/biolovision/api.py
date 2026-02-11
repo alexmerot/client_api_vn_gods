@@ -750,7 +750,7 @@ class ObservationsAPI(BiolovisionAPI):
         self._logger.debug(_("In api_list, with parameters %s"), opt_params)
         return super().api_list(opt_params)
 
-    def api_diff(self, id_taxo_group, delta_time, modification_type="all"):
+    def api_diff(self, id_taxo_group, delta_time, modification_type="all", id_territorial_unit=None):
         """Query for a list of updates or deletions since a given date.
 
         Calls /observations/diff to get list of created/updated or deleted
@@ -765,6 +765,8 @@ class ObservationsAPI(BiolovisionAPI):
         modification_type : str
             Type of diff queried : can be only_modified, only_deleted or
             all (default).
+        id_territorial_unit : str or None
+            Optional territorial unit to filter observations.
 
         Returns
         -------
@@ -780,6 +782,8 @@ class ObservationsAPI(BiolovisionAPI):
         params["id_taxo_group"] = str(id_taxo_group)
         params["modification_type"] = modification_type
         params["date"] = delta_time
+        if id_territorial_unit is not None:
+            params["id_territorial_unit"] = str(id_territorial_unit)
         # GET from API
         return super()._url_get(params, "observations/diff/")
 
