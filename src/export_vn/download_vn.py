@@ -1013,7 +1013,7 @@ class Observations(DownloadVn):
 
         return None
 
-    def update(self, id_taxo_group=None, since=None, taxo_groups_ex=None, short_version="1"):
+    def update(self, id_taxo_group=None, since=None, taxo_groups_ex=None, territorial_unit_ids=None, short_version="1"):
         """Download increment from VN by API and store json to file.
 
         Gets previous update date from database and updates since then.
@@ -1030,6 +1030,8 @@ class Observations(DownloadVn):
             Or if provided, updates since that given date.
         taxo_groups_ex : list
             List of taxo_groups to exclude from storage.
+        territorial_unit_ids : list or None
+            List of territorial_units to filter observations.
         short_version : str
             '0' for long JSON and '1' for short_version.
         """
@@ -1043,88 +1045,153 @@ class Observations(DownloadVn):
         taxo_list = self._list_taxo_groups(id_taxo_group, taxo_groups_ex)
         logger.info(_("Downloaded taxo_groups: %s"), taxo_list)
 
-        for taxo in taxo_list:
-            updated = []
-            deleted = []
-            if since is None:
-                since = self._backend.increment_get(self._site, taxo)
-            if since is not None:
-                # Valid since date provided or found in database
-                self._backend.increment_log(self._site, taxo, datetime.now())
-                logger.info(_("Getting updates for taxo_group %s since %s"), taxo, since)
-                items_dict = self._api_instance.api_diff(taxo, since, modification_type="all")
+        # Get territorial units if specified
+        t_units_to_process = []
+        if territorial_unit_ids is not None and len(territorial_unit_ids) > 0:
+            # Download territorial_units if needed
+            if self._t_units is None:
+                if self._db_enabled:
+                    # Try to read from local database
+                    self._t_units = ReadPostgresql(
+                        self._site,
+                        self._db_enabled,
+                        self._db_user,
+                        self._db_pw,
+                        self._db_host,
+                        self._db_port,
+                        self._db_name,
+                        self._db_schema_import,
+                        self._db_schema_vn,
+                        self._db_group,
+                        self._db_out_proj,
+                        self._db_sslmode,
+                    ).read("territorial_units")
+                if (self._t_units is None) or (len(self._t_units) == 0):
+                    # No territorial_units available, read from API
+                    self._t_units = [
+                        [tu]
+                        for tu in TerritorialUnitsAPI(
+                            user_email=self._user_email,
+                            user_pw=self._user_pw,
+                            base_url=self._base_url,
+                            client_key=self._client_key,
+                            client_secret=self._client_secret,
+                            max_retry=self._max_retry,
+                            max_requests=self._max_requests,
+                            max_chunks=self._max_chunks,
+                            unavailable_delay=self._unavailable_delay,
+                            retry_delay=self._retry_delay,
+                        ).api_list()["data"]
+                    ]
+            # Filter territorial units based on configuration
+            territorial_unit_ids = list(
+                map(lambda t_u: "0" + t_u if len(t_u) == 1 else t_u, territorial_unit_ids)
+            )
+            t_units_to_process = [u for u in self._t_units if u[0]["short_name"] in territorial_unit_ids]
+            logger.info(_("Filtering updates by territorial_units: %s"), territorial_unit_ids)
+        else:
+            # No filtering, set to None to process once without territorial unit filter
+            t_units_to_process = [None]
 
-                # List by processing type
-                for item in items_dict:
-                    logger.debug(
-                        _("Observation %s was %s"),
-                        item["id_sighting"],
-                        item["modification_type"],
-                    )
-                    if item["modification_type"] == "updated":
-                        updated.append(item["id_sighting"])
-                    elif item["modification_type"] == "deleted":
-                        deleted.append(item["id_sighting"])
+        for taxo in taxo_list:
+            for t_u in t_units_to_process:
+                updated = []
+                deleted = []
+                if since is None:
+                    since = self._backend.increment_get(self._site, taxo)
+                if since is not None:
+                    # Valid since date provided or found in database
+                    self._backend.increment_log(self._site, taxo, datetime.now())
+                    
+                    # Build territorial unit ID for API call
+                    id_territorial_unit = None
+                    if t_u is not None:
+                        id_territorial_unit = t_u[0]["id_country"] + t_u[0]["short_name"]
+                        logger.info(
+                            _("Getting updates for taxo_group %s, territorial_unit %s since %s"),
+                            taxo,
+                            id_territorial_unit,
+                            since,
+                        )
                     else:
-                        logger.error(
-                            _("Observation %s has unknown processing %s"),
-                            item["id_universal"],
+                        logger.info(_("Getting updates for taxo_group %s since %s"), taxo, since)
+                    
+                    items_dict = self._api_instance.api_diff(
+                        taxo, since, modification_type="all", id_territorial_unit=id_territorial_unit
+                    )
+
+                    # List by processing type
+                    for item in items_dict:
+                        logger.debug(
+                            _("Observation %s was %s"),
+                            item["id_sighting"],
                             item["modification_type"],
                         )
-                        raise NotImplementedException
-                logger.info(
-                    _("Received %d updated and %d deleted items"),
-                    len(updated),
-                    len(deleted),
-                )
-            else:
-                logger.error(_("No date found for last download, increment not performed"))
+                        if item["modification_type"] == "updated":
+                            updated.append(item["id_sighting"])
+                        elif item["modification_type"] == "deleted":
+                            deleted.append(item["id_sighting"])
+                        else:
+                            logger.error(
+                                _("Observation %s has unknown processing %s"),
+                                item["id_universal"],
+                                item["modification_type"],
+                            )
+                            raise NotImplementedException
+                    logger.info(
+                        _("Received %d updated and %d deleted items"),
+                        len(updated),
+                        len(deleted),
+                    )
+                else:
+                    logger.error(_("No date found for last download, increment not performed"))
 
-            # Process updates
-            try:
-                if len(updated) > 0:
-                    logger.debug(_("Creating or updating %d observations"), len(updated))
-                    # Update backend store, in chunks
-                    for i in range((len(updated) + self._max_list_length - 1) // self._max_list_length):
-                        s_list = ",".join(updated[i * self._max_list_length : (i + 1) * self._max_list_length])
-                        logger.debug(_("Updating slice %s"), s_list)
-                        timing = perf_counter_ns()
-                        items_dict = self._api_instance.api_list(
-                            taxo,
-                            id_sightings_list=s_list,
-                            short_version=short_version,
-                        )
-                        timing = (perf_counter_ns() - timing) / 1000
+                # Process updates
+                try:
+                    if len(updated) > 0:
+                        logger.debug(_("Creating or updating %d observations"), len(updated))
+                        # Update backend store, in chunks
+                        for i in range((len(updated) + self._max_list_length - 1) // self._max_list_length):
+                            s_list = ",".join(updated[i * self._max_list_length : (i + 1) * self._max_list_length])
+                            logger.debug(_("Updating slice %s"), s_list)
+                            timing = perf_counter_ns()
+                            items_dict = self._api_instance.api_list(
+                                taxo,
+                                id_sightings_list=s_list,
+                                short_version=short_version,
+                            )
+                            timing = (perf_counter_ns() - timing) / 1000
 
-                        # Call backend to store results
-                        self._backend.store(
-                            self._api_instance.controler,
-                            str(id_taxo_group) + "_upd_" + str(i),
-                            items_dict,
-                        )
+                            # Call backend to store results
+                            tu_suffix = "_" + id_territorial_unit if id_territorial_unit else ""
+                            self._backend.store(
+                                self._api_instance.controler,
+                                str(id_taxo_group) + tu_suffix + "_upd_" + str(i),
+                                items_dict,
+                            )
 
-                        # Call backend to store log
-                        self._backend.log(
-                            self._site,
-                            self._api_instance.controler,
-                            self._api_instance.transfer_errors,
-                            self._api_instance.http_status,
-                            _("Creating or updating %d observations") % (s_list.count(",") + 1),
-                            total_size(items_dict),
-                            timing,
-                        )
-            except HTTPError:
-                self._backend.log(
-                    self._site,
-                    self._api_instance.controler,
-                    self._api_instance.transfer_errors,
-                    self._api_instance.http_status,
-                    _("HTTP error during download"),
-                )
+                            # Call backend to store log
+                            self._backend.log(
+                                self._site,
+                                self._api_instance.controler,
+                                self._api_instance.transfer_errors,
+                                self._api_instance.http_status,
+                                _("Creating or updating %d observations") % (s_list.count(",") + 1),
+                                total_size(items_dict),
+                                timing,
+                            )
+                except HTTPError:
+                    self._backend.log(
+                        self._site,
+                        self._api_instance.controler,
+                        self._api_instance.transfer_errors,
+                        self._api_instance.http_status,
+                        _("HTTP error during download"),
+                    )
 
-            # Process deletes
-            if len(deleted) > 0:
-                self._backend.delete_obs(deleted)
+                # Process deletes
+                if len(deleted) > 0:
+                    self._backend.delete_obs(deleted)
 
         return None
 
