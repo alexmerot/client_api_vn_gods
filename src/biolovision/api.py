@@ -784,6 +784,10 @@ class ObservationsAPI(BiolovisionAPI):
         params["date"] = delta_time
         if id_territorial_unit is not None:
             params["id_territorial_unit"] = str(id_territorial_unit)
+            self._logger.debug(
+                _("Calling diff with id_territorial_unit: %s"),
+                id_territorial_unit,
+            )
         # GET from API
         return super()._url_get(params, "observations/diff/")
 

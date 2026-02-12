@@ -1104,12 +1104,14 @@ class Observations(DownloadVn):
                     self._backend.increment_log(self._site, taxo, datetime.now())
                     
                     # Build territorial unit ID for API call
+                    # diff API uses the numeric id field, not id_country+short_name
                     id_territorial_unit = None
                     if t_u is not None:
-                        id_territorial_unit = t_u[0]["id_country"] + t_u[0]["short_name"]
+                        id_territorial_unit = t_u[0]["id"]
                         logger.info(
-                            _("Getting updates for taxo_group %s, territorial_unit %s since %s"),
+                            _("Getting updates for taxo_group %s, territorial_unit %s (%s) since %s"),
                             taxo,
+                            t_u[0]["name"],
                             id_territorial_unit,
                             since,
                         )
@@ -1163,7 +1165,7 @@ class Observations(DownloadVn):
                             timing = (perf_counter_ns() - timing) / 1000
 
                             # Call backend to store results
-                            tu_suffix = "_" + id_territorial_unit if id_territorial_unit else ""
+                            tu_suffix = "_" + str(id_territorial_unit) if id_territorial_unit else ""
                             self._backend.store(
                                 self._api_instance.controler,
                                 str(id_taxo_group) + tu_suffix + "_upd_" + str(i),
