@@ -106,7 +106,7 @@ docker volume create \
     faune79_vn
 
 # 3. Create config file (TEMPORARY CONTAINER - exits immediately)
-# --user permet d'utiliser le bon UID pour éviter les erreurs de permission
+# --user enables to use proper UID to prevent permission errors
 docker run --rm \
   --user $(id -u):$(id -g) \
   --mount type=bind,source=$HOME/app/config/faune79,target=/app/config \
