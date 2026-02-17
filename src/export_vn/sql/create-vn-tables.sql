@@ -617,7 +617,7 @@ CREATE TABLE {{ db_schema_vn }}.observations (
     hidden              BOOLEAN,
     admin_hidden        BOOLEAN,
     observer_uid        INTEGER,
-    details             TEXT,
+    details             JSONB,
     behaviours          TEXT[],
     comment             TEXT,
     hidden_comment      TEXT,
@@ -657,6 +657,9 @@ CREATE INDEX observations_idx_project_code
 DROP INDEX IF EXISTS observations_gidx_geom;
 CREATE INDEX observations_gidx_geom
     ON {{ db_schema_vn }}.observations USING gist(geom);
+DROP INDEX IF EXISTS observations_gidx_details;
+CREATE INDEX observations_gidx_details
+    ON {{ db_schema_vn }}.observations USING GIN(details);
 
 -- Add trigger for postgis geometry update
 DROP TRIGGER IF EXISTS trg_geom ON {{ db_schema_vn }}.observations;
@@ -720,7 +723,7 @@ CREATE OR REPLACE FUNCTION update_observations() RETURNS TRIGGER AS $$
             hidden            = CAST(((NEW.item -> 'observers') -> 0) ->> 'hidden' AS BOOLEAN),
             admin_hidden      = CAST(((NEW.item -> 'observers') -> 0) ->> 'admin_hidden' AS BOOLEAN),
             observer_uid      = CAST(((NEW.item -> 'observers') -> 0) ->> '@uid' AS INTEGER),
-            details           = ((NEW.item -> 'observers') -> 0) ->> 'details',
+            details           = ((NEW.item -> 'observers') -> 0) -> 'details',
             behaviours        = {{ db_schema_vn }}.behaviour_array(((NEW.item -> 'observers') -> 0) -> 'behaviours'),
             comment           = ((NEW.item -> 'observers') -> 0) ->> 'comment',
             hidden_comment    = ((NEW.item -> 'observers') -> 0) ->> 'hidden_comment',
@@ -767,7 +770,7 @@ CREATE OR REPLACE FUNCTION update_observations() RETURNS TRIGGER AS $$
                 CAST(((NEW.item -> 'observers') -> 0) ->> 'hidden' AS BOOLEAN),
                 CAST(((NEW.item -> 'observers') -> 0) ->> 'admin_hidden' AS BOOLEAN),
                 CAST(((NEW.item -> 'observers') -> 0) ->> '@uid' AS INTEGER),
-                ((NEW.item -> 'observers') -> 0) ->> 'details',
+                ((NEW.item -> 'observers') -> 0) -> 'details',
                 {{ db_schema_vn }}.behaviour_array(((NEW.item -> 'observers') -> 0) -> 'behaviours'),
                 ((NEW.item -> 'observers') -> 0) ->> 'comment',
                 ((NEW.item -> 'observers') -> 0) ->> 'hidden_comment',
@@ -815,7 +818,7 @@ CREATE OR REPLACE FUNCTION update_observations() RETURNS TRIGGER AS $$
             CAST(((NEW.item -> 'observers') -> 0) ->> 'hidden' AS BOOLEAN),
             CAST(((NEW.item -> 'observers') -> 0) ->> 'admin_hidden' AS BOOLEAN),
             CAST(((NEW.item -> 'observers') -> 0) ->> '@uid' AS INTEGER),
-            ((NEW.item -> 'observers') -> 0) ->> 'details',
+            ((NEW.item -> 'observers') -> 0) -> 'details',
             {{ db_schema_vn }}.behaviour_array(((NEW.item -> 'observers') -> 0) -> 'behaviours'),
             ((NEW.item -> 'observers') -> 0) ->> 'comment',
             ((NEW.item -> 'observers') -> 0) ->> 'hidden_comment',

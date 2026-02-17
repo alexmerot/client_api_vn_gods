@@ -11,6 +11,7 @@ Properties
 
 """
 
+import json
 import logging
 from datetime import date
 
@@ -133,6 +134,14 @@ def store_1_observation(item):
         elem["observers"][0]["coord_x_local"],
         elem["observers"][0]["coord_y_local"],
     ) = item.transformer(elem["observers"][0]["coord_lon"], elem["observers"][0]["coord_lat"])
+
+    # Parse details field from string to JSON if it exists and is a string
+    if "details" in elem["observers"][0] and isinstance(elem["observers"][0]["details"], str):
+        try:
+            elem["observers"][0]["details"] = json.loads(elem["observers"][0]["details"])
+        except (json.JSONDecodeError, TypeError):
+            # If parsing fails, keep as is or set to empty array
+            elem["observers"][0]["details"] = []
 
     # Store in Postgresql
     metadata = item.metadata
