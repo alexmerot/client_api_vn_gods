@@ -152,11 +152,6 @@ docker container stop faune79_vn && \
 - **Upstream Repository**: <https://github.com/dthonon/Client_API_VN>
 - **API Reference**: See [biolovision.api](https://dthonon.github.io/Client_API_VN/modules/)
 
-## Presentation
-
-Python applications that use Biolovision/VisioNature (VN) API.
-See <https://dthonon.github.io/Client_API_VN/>.
-
 ## Docker (development)
 
 A `docker-compose.yml` provides a ready-to-use development stack: the CLI
