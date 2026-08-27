@@ -26,7 +26,7 @@ case "$CMD" in
   create)
     mkdir -p "$DIR"
     cp -n "$TEMPLATE_DIR/docker-compose.site.yml" "$DIR/docker-compose.yml"
-    cp -n "$TEMPLATE_DIR/.env.site.example" "$DIR/.env"
+    cp -n "$TEMPLATE_DIR/.env.example" "$DIR/.env"
     mkdir -p "$DIR/data" "$DIR/logs" "$DIR/config"
     chmod 700 "$DIR/data" "$DIR/logs" "$DIR/config"
     echo "Created $DIR — edit $DIR/.env, then: vnsite start $DIR"
