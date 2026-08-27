@@ -21,9 +21,9 @@ import datetime
 import importlib.resources
 import json
 import logging
+import re
 import shutil
 import sys
-from ast import literal_eval
 from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
 
@@ -36,6 +36,48 @@ from biolovision.api import ObservationsAPI
 from . import __version__
 
 logger = logging.getLogger(__name__)
+
+# Matches ['key'], ["key"] or [0] segments of a $['a']['b'][0]-style path
+_PATH_TOKEN_RE = re.compile(r"\[\s*(?:'([^']*)'|\"([^\"]*)\"|(-?\d+))\s*\]")
+
+
+def _parse_json_path(path: str) -> list[str | int]:
+    """Parse a `$['a']['b'][0]`-style path into a list of str/int keys."""
+    if not path.startswith("$"):
+        raise ValueError(_("Path must start with '$': %s") % path)
+    remainder = path[1:]
+    keys: list[str | int] = []
+    pos = 0
+    for m in _PATH_TOKEN_RE.finditer(remainder):
+        if m.start() != pos:
+            raise ValueError(_("Invalid path syntax near position %d: %s") % (pos, path))
+        pos = m.end()
+        str_key, str_key2, int_key = m.groups()
+        keys.append(int(int_key) if int_key is not None else (str_key if str_key is not None else str_key2))
+    if pos != len(remainder):
+        raise ValueError(_("Invalid path syntax: %s") % path)
+    return keys
+
+
+def _get_by_path(obj, keys: list[str | int]):
+    """Navigate obj following keys, without evaluating any code."""
+    for key in keys:
+        obj = obj[key]
+    return obj
+
+
+def _set_by_path(obj, keys: list[str | int], value) -> None:
+    """Set value at obj[keys[0]][keys[1]]..., without evaluating any code."""
+    for key in keys[:-1]:
+        obj = obj[key]
+    obj[keys[-1]] = value
+
+
+def _del_by_path(obj, keys: list[str | int]) -> None:
+    """Delete obj[keys[0]][keys[1]]..., without evaluating any code."""
+    for key in keys[:-1]:
+        obj = obj[key]
+    del obj[keys[-1]]
 
 
 @click.version_option(package_name="Client_API_VN")
@@ -154,7 +196,8 @@ def update(config: str, input_file: str) -> None:
         logger.critical(_("Input file %s does not exist"), str(Path(input_file)))
         raise FileNotFoundError
 
-    print(cfg)
+    # Log only non-secret fields; avoid leaking user_pw/client_key/client_secret
+    logger.debug(_("Site configuration: site=%s, user_email=%s"), cfg.site, cfg.user_email)  # pyright: ignore[reportOptionalMemberAccess]
     obs_api = {}
     logger.debug(_("Preparing update for site %s"), site)
     obs_api[site] = ObservationsAPI(
@@ -224,11 +267,11 @@ def update(config: str, input_file: str) -> None:
                             sighting["data"],
                         )
                         # JSON path relative to "sighting"
-                        repl = row[2].strip().replace("$", "sighting")
+                        path_keys = _parse_json_path(row[2].strip())
                         # Get current value, if exists
                         try:
-                            old_attr = literal_eval(repl)
-                        except ValueError:
+                            old_attr = _get_by_path(sighting, path_keys)
+                        except (KeyError, IndexError, TypeError):
                             old_attr = None
                         # Get current hidden_comment, if exists
                         try:
@@ -252,16 +295,12 @@ def update(config: str, input_file: str) -> None:
                             )
                         )
                         if row[3].strip() == "replace":
-                            exec("{} = {}".format(repl, "row[4].strip()"))
+                            _set_by_path(sighting, path_keys, row[4].strip())
                         else:  # delete_attribute
-                            with contextlib.suppress(KeyError):
-                                exec(f"del {repl}")
+                            with contextlib.suppress(KeyError, IndexError):
+                                _del_by_path(sighting, path_keys)
 
-                        exec(
-                            """sighting['data']['sightings'][0]['observers'][0]['hidden_comment'] = '{}'""".format(
-                                msg.replace('"', '\\"').replace("'", "\\'")
-                            )
-                        )
+                        sighting["data"]["sightings"][0]["observers"][0]["hidden_comment"] = msg
                         logger.debug(_("After: %s"), sighting["data"])
                         # Update to remote site
                         obs_api[row[0].strip()].api_update(row[1].strip(), sighting)

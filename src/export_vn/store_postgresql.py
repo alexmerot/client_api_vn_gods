@@ -25,6 +25,7 @@ from sqlalchemy import (
     PrimaryKeyConstraint,
     String,
     Table,
+    bindparam,
     create_engine,
     exc,
     func,
@@ -767,56 +768,68 @@ class Postgresql:
             return
         
         logger.info(_("Extracting insee from observations JSONB item"))
-        
+
+        # Schema name is a trusted identifier (from config), not a bindable value
+        schema = self._db_schema_import
+
         try:
             # Count observations needing insee
-            sql_count = f"""
-                SELECT COUNT(*) 
-                FROM {self._db_schema_import}.observations_json 
-                WHERE site = '{self._site}' AND insee IS NULL
-            """
-            result_count = self._conn.execute(sql_count)
+            sql_count = text(
+                f"""
+                SELECT COUNT(*)
+                FROM {schema}.observations_json
+                WHERE site = :site AND insee IS NULL
+                """
+            )  # noqa: S608
+            result_count = self._conn.execute(sql_count, {"site": self._site})
             total_null = result_count.scalar()
             logger.info(_("Found %d observations with NULL insee"), total_null)
-            
+
             # First, try to extract insee from JSONB item where it exists
-            sql = f"""
-                UPDATE {self._db_schema_import}.observations_json
+            sql = text(
+                f"""
+                UPDATE {schema}.observations_json
                 SET insee = item #>> '{{place,insee}}'
-                WHERE site = '{self._site}'
+                WHERE site = :site
                   AND insee IS NULL
                   AND item #>> '{{place,insee}}' IS NOT NULL
                   AND item #>> '{{place,insee}}' != ''
-            """
-            result = self._conn.execute(sql)
+                """
+            )  # noqa: S608
+            result = self._conn.execute(sql, {"site": self._site})
             rows_updated = result.rowcount if hasattr(result, 'rowcount') else 0
             logger.info(_("Extracted insee from JSONB for %d observations"), rows_updated)
-            
+
             # Check if places_json table has data
-            sql_places_check = f"""
-                SELECT COUNT(*) 
-                FROM {self._db_schema_import}.places_json 
-                WHERE site = '{self._site}'
-            """
-            result_places = self._conn.execute(sql_places_check)
+            sql_places_check = text(
+                f"""
+                SELECT COUNT(*)
+                FROM {schema}.places_json
+                WHERE site = :site
+                """
+            )  # noqa: S608
+            result_places = self._conn.execute(sql_places_check, {"site": self._site})
             places_count = result_places.scalar()
-            
+
             if places_count == 0:
                 logger.warning(_("places_json table is empty for site %s - cannot lookup insee from places. Download places data first."), self._site)
+                # Commit the JSONB extraction UPDATE already run above
+                self._conn.commit()
                 return
-            
+
             logger.info(_("Found %d places in places_json for site %s"), places_count, self._site)
-            
+
             # Second, for rows still without insee, look up from places_json/local_admin_units_json
             # via id_place from the JSONB
-            sql_lookup = f"""
-                UPDATE {self._db_schema_import}.observations_json o
+            sql_lookup = text(
+                f"""
+                UPDATE {schema}.observations_json o
                 SET insee = lau.item->>'insee'
-                FROM {self._db_schema_import}.places_json p
-                JOIN {self._db_schema_import}.local_admin_units_json lau 
+                FROM {schema}.places_json p
+                JOIN {schema}.local_admin_units_json lau
                     ON lau.id = (p.item->>'id_commune')::INTEGER
                     AND lau.site = p.site
-                WHERE o.site = '{self._site}'
+                WHERE o.site = :site
                   AND o.insee IS NULL
                   AND p.site = o.site
                   AND o.item #>> '{{place,@id}}' IS NOT NULL
@@ -825,17 +838,21 @@ class Postgresql:
                   AND p.item->>'id_commune' ~ '^[0-9]+$'
                   AND lau.item->>'insee' IS NOT NULL
                   AND lau.item->>'insee' != ''
-            """
-            result2 = self._conn.execute(sql_lookup)
+                """
+            )  # noqa: S608
+            result2 = self._conn.execute(sql_lookup, {"site": self._site})
             rows_updated2 = result2.rowcount if hasattr(result2, 'rowcount') else 0
             logger.info(_("Looked up insee from places for %d observations"), rows_updated2)
-            
+
             # Final count of remaining NULL insee
-            result_final = self._conn.execute(sql_count)
+            result_final = self._conn.execute(sql_count, {"site": self._site})
             final_null = result_final.scalar()
             logger.info(_("Still have %d observations with NULL insee (places may not be in places_json table)"), final_null)
-            
+
+            self._conn.commit()
+
         except Exception as e:
+            self._conn.rollback()
             logger.warning(_("Failed to extract/update observations insee: %s"), str(e))
     
     def filter_observations_by_insee(self, department_codes):
@@ -855,65 +872,78 @@ class Postgresql:
             return
         
         logger.info(_("Filtering observations_json and forms_json by %d department codes"), len(department_codes))
-        
+
+        # Schema name is a trusted identifier (from config), not a bindable value
+        schema = self._db_schema_import
+
         try:
-            # Build department list for SQL
-            dept_list = "','" .join(str(code) for code in department_codes)
-            
+            # Department codes are bound as an expanding parameter, not interpolated
+            depts = [str(code) for code in department_codes]
+
             # Strategy: Delete observations where the place's commune is outside allowed departments
             # Join: observations_json -> places_json -> local_admin_units_json to filter
-            
+
             # First approach: Filter by insee field if populated
-            sql_insee = f"""
-                DELETE FROM {self._db_schema_import}.observations_json
-                WHERE site = '{self._site}'
+            sql_insee = text(
+                f"""
+                DELETE FROM {schema}.observations_json
+                WHERE site = :site
                   AND insee IS NOT NULL
-                  AND LEFT(insee, 2) NOT IN ('{dept_list}')
-            """
-            result1 = self._conn.execute(sql_insee)
+                  AND LEFT(insee, 2) NOT IN :depts
+                """
+            ).bindparams(bindparam("depts", expanding=True))  # noqa: S608
+            result1 = self._conn.execute(sql_insee, {"site": self._site, "depts": depts})
             rows_deleted_insee = result1.rowcount if hasattr(result1, 'rowcount') else 0
             logger.info(_("Deleted %d observations by insee field"), rows_deleted_insee)
-            
+
             # Second approach: Filter by joining with places_json and local_admin_units_json
             # For observations where insee is NULL, check via place lookup
-            sql_join = f"""
-                DELETE FROM {self._db_schema_import}.observations_json o
-                WHERE o.site = '{self._site}'
+            sql_join = text(
+                f"""
+                DELETE FROM {schema}.observations_json o
+                WHERE o.site = :site
                   AND o.insee IS NULL
                   AND EXISTS (
-                    SELECT 1 
-                    FROM {self._db_schema_import}.places_json p
-                    INNER JOIN {self._db_schema_import}.local_admin_units_json lau
+                    SELECT 1
+                    FROM {schema}.places_json p
+                    INNER JOIN {schema}.local_admin_units_json lau
                       ON lau.id = CAST(p.item->>'id_commune' AS INTEGER)
                       AND lau.site = p.site
                     WHERE p.id = CAST(o.item #>> '{{place,@id}}' AS INTEGER)
                       AND p.site = o.site
-                      AND LEFT(lau.item->>'insee', 2) NOT IN ('{dept_list}')
+                      AND LEFT(lau.item->>'insee', 2) NOT IN :depts
                   )
-            """
-            result2 = self._conn.execute(sql_join)
+                """
+            ).bindparams(bindparam("depts", expanding=True))  # noqa: S608
+            result2 = self._conn.execute(sql_join, {"site": self._site, "depts": depts})
             rows_deleted_join = result2.rowcount if hasattr(result2, 'rowcount') else 0
             logger.info(_("Deleted %d observations by place lookup"), rows_deleted_join)
-            
+
             # Delete orphaned forms (forms without any remaining observations)
-            sql_forms = f"""
-                DELETE FROM {self._db_schema_import}.forms_json f
-                WHERE f.site = '{self._site}'
+            sql_forms = text(
+                f"""
+                DELETE FROM {schema}.forms_json f
+                WHERE f.site = :site
                   AND f.item->>'id_form_universal' IS NOT NULL
                   AND NOT EXISTS (
-                    SELECT 1 FROM {self._db_schema_import}.observations_json o
+                    SELECT 1 FROM {schema}.observations_json o
                     WHERE o.id_form_universal = f.item->>'id_form_universal'
+                      AND o.site = f.site
                   )
-            """
-            result_forms = self._conn.execute(sql_forms)
+                """
+            )  # noqa: S608
+            result_forms = self._conn.execute(sql_forms, {"site": self._site})
             forms_deleted = result_forms.rowcount if hasattr(result_forms, 'rowcount') else 0
             logger.info(_("Deleted %d orphaned forms"), forms_deleted)
-            
+
             total_deleted = rows_deleted_insee + rows_deleted_join
-            logger.info(_("Total: deleted %d observations and %d forms outside departments"), 
+            logger.info(_("Total: deleted %d observations and %d forms outside departments"),
                        total_deleted, forms_deleted)
-            
+
+            self._conn.commit()
+
         except Exception as e:
+            self._conn.rollback()
             logger.warning(_("Failed to filter observations by department: %s"), str(e))
     
     def set_insee_filter(self, department_codes):
