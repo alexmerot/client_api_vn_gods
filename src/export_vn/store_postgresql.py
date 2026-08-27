@@ -813,6 +813,8 @@ class Postgresql:
 
             if places_count == 0:
                 logger.warning(_("places_json table is empty for site %s - cannot lookup insee from places. Download places data first."), self._site)
+                # Commit the JSONB extraction UPDATE already run above
+                self._conn.commit()
                 return
 
             logger.info(_("Found %d places in places_json for site %s"), places_count, self._site)
@@ -847,7 +849,10 @@ class Postgresql:
             final_null = result_final.scalar()
             logger.info(_("Still have %d observations with NULL insee (places may not be in places_json table)"), final_null)
 
+            self._conn.commit()
+
         except Exception as e:
+            self._conn.rollback()
             logger.warning(_("Failed to extract/update observations insee: %s"), str(e))
     
     def filter_observations_by_insee(self, department_codes):
@@ -923,6 +928,7 @@ class Postgresql:
                   AND NOT EXISTS (
                     SELECT 1 FROM {schema}.observations_json o
                     WHERE o.id_form_universal = f.item->>'id_form_universal'
+                      AND o.site = f.site
                   )
                 """
             )  # noqa: S608
@@ -934,7 +940,10 @@ class Postgresql:
             logger.info(_("Total: deleted %d observations and %d forms outside departments"),
                        total_deleted, forms_deleted)
 
+            self._conn.commit()
+
         except Exception as e:
+            self._conn.rollback()
             logger.warning(_("Failed to filter observations by department: %s"), str(e))
     
     def set_insee_filter(self, department_codes):

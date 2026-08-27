@@ -31,6 +31,7 @@ from bs4 import BeautifulSoup
 from dynaconf import Dynaconf, ValidationError, Validator
 from jinja2 import Environment, PackageLoader
 from pytz import utc
+from sqlalchemy.engine.url import URL
 from tabulate import tabulate
 
 from export_vn.download_vn import (
@@ -409,15 +410,21 @@ def migrate(cfg, sql_quiet, client_min_message):
         keep_trailing_newline=True,
         autoescape=True,
     )
-    db_url = f"postgresql://{cfg.db_user}:{cfg.db_pw}@{cfg.db_host}:{cfg.db_port}/{cfg.db_name}"
+    # URL.create() takes care of percent-encoding user/password
+    db_url = URL.create(
+        "postgresql",
+        username=cfg.db_user,
+        password=cfg.db_pw,
+        host=cfg.db_host,
+        port=cfg.db_port,
+        database=cfg.db_name,
+    ).render_as_string(hide_password=False)
     try:
         subprocess.run(
             [
                 "alembic",
                 "-x",
                 f"db_schema_import={cfg.db_schema_import}",
-                "-x",
-                f"db_url={db_url}",
                 "--config",
                 "src/alembic.ini",
                 "upgrade",
@@ -425,6 +432,9 @@ def migrate(cfg, sql_quiet, client_min_message):
             ],
             check=True,
             shell=False,
+            # Pass the URL (with embedded password) via env, not on the command line,
+            # to avoid leaking it via `ps`
+            env={**os.environ, "ALEMBIC_DB_URL": db_url},
         )
     except subprocess.CalledProcessError:  # pragma: no cover
         logger.exception()

@@ -41,12 +41,12 @@ logger = logging.getLogger(__name__)
 _PATH_TOKEN_RE = re.compile(r"\[\s*(?:'([^']*)'|\"([^\"]*)\"|(-?\d+))\s*\]")
 
 
-def _parse_json_path(path: str) -> list:
+def _parse_json_path(path: str) -> list[str | int]:
     """Parse a `$['a']['b'][0]`-style path into a list of str/int keys."""
     if not path.startswith("$"):
         raise ValueError(_("Path must start with '$': %s") % path)
     remainder = path[1:]
-    keys: list = []
+    keys: list[str | int] = []
     pos = 0
     for m in _PATH_TOKEN_RE.finditer(remainder):
         if m.start() != pos:
@@ -59,21 +59,21 @@ def _parse_json_path(path: str) -> list:
     return keys
 
 
-def _get_by_path(obj, keys: list):
+def _get_by_path(obj, keys: list[str | int]):
     """Navigate obj following keys, without evaluating any code."""
     for key in keys:
         obj = obj[key]
     return obj
 
 
-def _set_by_path(obj, keys: list, value) -> None:
+def _set_by_path(obj, keys: list[str | int], value) -> None:
     """Set value at obj[keys[0]][keys[1]]..., without evaluating any code."""
     for key in keys[:-1]:
         obj = obj[key]
     obj[keys[-1]] = value
 
 
-def _del_by_path(obj, keys: list) -> None:
+def _del_by_path(obj, keys: list[str | int]) -> None:
     """Delete obj[keys[0]][keys[1]]..., without evaluating any code."""
     for key in keys[:-1]:
         obj = obj[key]
@@ -196,7 +196,8 @@ def update(config: str, input_file: str) -> None:
         logger.critical(_("Input file %s does not exist"), str(Path(input_file)))
         raise FileNotFoundError
 
-    print(cfg)
+    # Log only non-secret fields; avoid leaking user_pw/client_key/client_secret
+    logger.debug(_("Site configuration: site=%s, user_email=%s"), cfg.site, cfg.user_email)  # pyright: ignore[reportOptionalMemberAccess]
     obs_api = {}
     logger.debug(_("Preparing update for site %s"), site)
     obs_api[site] = ObservationsAPI(
