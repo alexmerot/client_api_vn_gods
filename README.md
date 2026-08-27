@@ -70,80 +70,49 @@ Validate downloaded data against JSON schemas to ensure data integrity.
 > [!NOTE]
 > The Docker container requires an external PostgreSQL database.
 
-### Docker Installation
+### Docker Production Installation
+
+The production container uses an external PostgreSQL/PostGIS database. The
+database is not managed by Docker Compose. Build the application image once
+from the repository root:
 
 ```bash
-# Pull the repository
 git clone https://github.com/alexmerot/client_api_vn_gods
-
-# Build the image
-docker build --no-cache -t client_api client_api_vn_gods/
+cd client_api_vn_gods
+docker build -t client_api:latest .
+chmod +x docker/vnsite
+sudo ln -s "$(pwd)/docker/vnsite" /usr/local/bin/vnsite
 ```
 
-Example for running the container (run it with `sudo` if necessary):
+Create one self-contained Compose deployment per site:
 
 ```bash
-# 1. Create directories on larger disk in the host server (choose your user)
-mkdir -p $HOME/docker_volumes/faune79_vn
-mkdir -p $HOME/logs/faune79
-mkdir -p $HOME/config/faune79
-
-# Set proper permissions
-chmod 700 $HOME/docker_volumes
-chmod 700 $HOME/logs/faune79
-chmod 700 $HOME/config/faune79
-
-# 2. Create data volume (for application data)
-##   --driver local: Use Docker's local volume driver
-##   --opt type=none: Don't use a specific filesystem type
-##   --opt device=/home/postgres/docker_volumes/faune79_vn: Where to store data
-##   --opt o=bind: Bind mount the directory
-docker volume create \
-    --driver local \
-    --opt type=none \
-    --opt device=$HOME/docker_volumes/faune79_vn \
-    --opt o=bind \
-    faune79_vn
-
-# 3. Create config file (TEMPORARY CONTAINER - exits immediately)
-# --user enables to use proper UID to prevent permission errors
-docker run --rm \
-  --user $(id -u):$(id -g) \
-  --mount type=bind,source=$HOME/app/config/faune79,target=/app/config \
-  client_api transfer_vn --init /app/config/.env_faune79.toml
-
-# 4. Edit config on host
-vim $HOME/config/faune79/.env_faune79.toml
-
-# 5. Start application (PERMANENT CONTAINER - runs continuously)
-# Set Home to be /app
-docker run -d --name faune79_vn \
-    --user $(id -u):$(id -g) \
-    -e HOME=/app \
-    -e TERM=xterm-256color \
-    --restart unless-stopped \
-    --mount source=faune79_vn,target=/app \
-    --mount type=bind,source=$HOME/app/logs/faune79,target=/app/tmp \
-    --mount type=bind,source=$HOME/app/config/faune79,target=/app/config,readonly \
-    -w /app \
-    client_api sleep infinity
-
-# 6. Set proper ownership
-chown -R $(id -u):$(id -g) $HOME/docker_volumes/faune79_vn
-
-# 7. Set PS1 for better interface (optionnal):
-docker exec faune79_vn bash -c 'echo "export PS1=\"appuser@\h:\w\$ \"" > /app/.bashrc'
+vnsite create ~/sites/faune79
 ```
 
-This setup allows you to have a Docker volume in a specific folder to store files in `$HOME`, as well as to set up a bind mount for both logs and configurations (which can be used directly from the host).
-
-When the image is updated, the volume must be rebuilt (back up the old volume if necessary). The entire process:
+This creates `docker-compose.yml`, `.env`, `data/`, `logs/`, and `config/` in
+the selected directory. Edit `.env` and configure the external database in the
+generated TOML file. Initialize that configuration with:
 
 ```bash
-docker container stop faune79_vn && \
-    docker container rm faune79_vn && \
-    docker volume rm faune79_vn && \
-    rm -rf $HOME/docker_volumes/faune79_vn/{*,.[!.]*}
+docker compose -f ~/sites/faune79/docker-compose.yml \
+  --env-file ~/sites/faune79/.env \
+  run --rm app transfer_vn --init /app/config/.env_faune79.toml
+```
+
+After editing the generated TOML file, start the site:
+
+```bash
+vnsite start ~/sites/faune79
+```
+
+The site directory's `data/`, `logs/`, and `config/` folders are bind-mounted
+to `/app/VN_files`, `/app/tmp`, and `/app/config`. Daily management commands are:
+
+```bash
+vnsite stop ~/sites/faune79
+vnsite restart ~/sites/faune79
+vnsite logs ~/sites/faune79
 ```
 
 ## Documentation
