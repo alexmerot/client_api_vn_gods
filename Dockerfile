@@ -1,8 +1,8 @@
 # syntax=docker/dockerfile:1
 
-FROM python:3.14.2-slim-trixie AS builder
+FROM python:3.14-slim-trixie AS builder
 
-ENV POETRY_VERSION=2.3.1 \
+ENV POETRY_VERSION=2.4.1 \
     POETRY_VIRTUALENVS_CREATE=true \
     POETRY_VIRTUALENVS_IN_PROJECT=true \
     POETRY_NO_INTERACTION=1
@@ -17,23 +17,24 @@ WORKDIR /app
 # Two runs for Docker layer caching optimisation
 COPY pyproject.toml poetry.lock ./
 
-RUN poetry install --no-ansi --without dev --no-root
+RUN poetry install --no-ansi --only main --no-root
 
-COPY . .
+COPY src ./src
+COPY README.md LICENSE ./
 
-RUN poetry install --no-ansi --without dev
+RUN poetry install --no-ansi --only main
 
-FROM python:3.14.2-slim-trixie
+FROM python:3.14-slim-trixie
 
 # Set timezone to Europe/Paris
 ENV TZ=Europe/Paris
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # Set locale to French and install PostgreSQL client
-RUN apt-get update && apt-get install -y locales postgresql-client procps && \
+RUN apt-get update && apt-get install -y --no-install-recommends locales postgresql-client && \
     sed -i '/fr_FR.UTF-8/s/^# //g' /etc/locale.gen && \
     locale-gen fr_FR.UTF-8 && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/*
 
 ENV LANG=fr_FR.UTF-8
 ENV LANGUAGE=fr_FR:fr
@@ -43,24 +44,12 @@ ENV LC_ALL=fr_FR.UTF-8
 RUN useradd -r -m -d /home/appuser -U appuser
 
 WORKDIR /app
-COPY --from=builder /app /app
+COPY --from=builder --chown=appuser:appuser /app /app
 
 # Activate the virtual environment
 ENV VIRTUAL_ENV=/app/.venv
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
-# Set permissions for the non-root user
-RUN chown -R appuser:appuser /app && chmod -R 755 /app
-
-# Create config directory for bind mounts
-RUN mkdir -p /app/config
-
-# Configure bash prompt for better user experience
-RUN echo 'export PS1="appuser@\h:\w\$ "' > /app/.bashrc && \
-    chmod 644 /app/.bashrc
-
-# Switch to non-root user (can be overridden with --user flag)
 USER appuser
 
-# Default command
 CMD ["transfer_vn", "--help"]
