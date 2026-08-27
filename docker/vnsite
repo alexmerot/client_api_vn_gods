@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Manage per-site production deployments of client_api, Portabase-CLI style.
+#
+#   vnsite create <path>    # scaffold docker-compose.yml + .env + bind-mount dirs
+#   vnsite start   [path]   # docker compose up -d       (default path: .)
+#   vnsite stop    [path]   # docker compose down
+#   vnsite restart [path]   # docker compose restart
+#   vnsite logs    [path]   # docker compose logs -f
+#
+# Build the image once from the repo root before starting a site:
+#   docker build -t client_api:latest .
+set -euo pipefail
+
+TEMPLATE_DIR="$(cd "$(dirname "$0")" && pwd)"
+CMD="${1:-}"
+DIR="${2:-.}"
+
+usage() {
+  echo "Usage: vnsite {create|start|stop|restart|logs} [path]" >&2
+  exit 1
+}
+
+[[ -n "$CMD" ]] || usage
+
+case "$CMD" in
+  create)
+    mkdir -p "$DIR"
+    cp -n "$TEMPLATE_DIR/docker-compose.site.yml" "$DIR/docker-compose.yml"
+    cp -n "$TEMPLATE_DIR/.env.site.example" "$DIR/.env"
+    mkdir -p "$DIR/data" "$DIR/logs" "$DIR/config"
+    chmod 700 "$DIR/data" "$DIR/logs" "$DIR/config"
+    echo "Created $DIR — edit $DIR/.env, then: vnsite start $DIR"
+    ;;
+  start)   (cd "$DIR" && docker compose up -d) ;;
+  stop)    (cd "$DIR" && docker compose down) ;;
+  restart) (cd "$DIR" && docker compose restart) ;;
+  logs)    (cd "$DIR" && docker compose logs -f) ;;
+  *) usage ;;
+esac
