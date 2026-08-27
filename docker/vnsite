@@ -11,7 +11,17 @@
 #   docker build -t client_api:latest .
 set -euo pipefail
 
-TEMPLATE_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_PATH="${BASH_SOURCE[0]}"
+while [[ -h "$SCRIPT_PATH" ]]; do
+  SCRIPT_DIR="$(cd -P "$(dirname "$SCRIPT_PATH")" >/dev/null 2>&1 && pwd)"
+  LINK_TARGET="$(readlink "$SCRIPT_PATH")"
+  if [[ "$LINK_TARGET" == /* ]]; then
+    SCRIPT_PATH="$LINK_TARGET"
+  else
+    SCRIPT_PATH="$SCRIPT_DIR/$LINK_TARGET"
+  fi
+done
+TEMPLATE_DIR="$(cd -P "$(dirname "$SCRIPT_PATH")" && pwd)"
 CMD="${1:-}"
 DIR="${2:-.}"
 
@@ -25,8 +35,18 @@ usage() {
 case "$CMD" in
   create)
     mkdir -p "$DIR"
-    cp -n "$TEMPLATE_DIR/docker-compose.site.yml" "$DIR/docker-compose.yml"
-    cp -n "$TEMPLATE_DIR/.env.example" "$DIR/.env"
+    SITE_NAME="$(basename "$(cd "$DIR" && pwd)")"
+    if [[ ! "$SITE_NAME" =~ ^[a-zA-Z0-9][a-zA-Z0-9_.-]*$ ]]; then
+      echo "Invalid site directory name: $SITE_NAME" >&2
+      exit 1
+    fi
+    if [[ ! -e "$DIR/docker-compose.yml" ]]; then
+      cp "$TEMPLATE_DIR/docker-compose.site.yml" "$DIR/docker-compose.yml"
+    fi
+    if [[ ! -e "$DIR/.env" ]]; then
+      cp "$TEMPLATE_DIR/.env.example" "$DIR/.env"
+      sed -i "s/^SITE=.*/SITE=$SITE_NAME/" "$DIR/.env"
+    fi
     mkdir -p "$DIR/data" "$DIR/logs" "$DIR/config"
     chmod 700 "$DIR/data" "$DIR/logs" "$DIR/config"
     echo "Created $DIR — edit $DIR/.env, then: vnsite start $DIR"
