@@ -1,0 +1,17 @@
+services:
+  app:
+    image: ${IMAGE}
+    container_name: ${SITE}_vn
+    restart: unless-stopped
+    user: "${APP_UID}:${APP_GID}"
+    environment:
+      HOME: /app
+      TERM: xterm-256color
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    working_dir: /app
+    volumes:
+      - ./data:/app/VN_files
+      - ./logs:/app/tmp
+      - ./config:/app/config
+    command: sleep infinity
