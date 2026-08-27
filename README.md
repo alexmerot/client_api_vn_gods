@@ -73,16 +73,18 @@ Validate downloaded data against JSON schemas to ensure data integrity.
 ### Docker Production Installation
 
 The production container uses an external PostgreSQL/PostGIS database. The
-database is not managed by Docker Compose. Build the application image once
-from the repository root:
+database is not managed by Docker Compose. Install the CLI in a Python
+environment and build the application image from the repository root:
 
 ```bash
 git clone https://github.com/alexmerot/client_api_vn_gods
 cd client_api_vn_gods
+poetry install
 docker build -t client_api:latest .
-chmod +x docker/vnsite
-sudo ln -s "$(pwd)/docker/vnsite" /usr/local/bin/vnsite
 ```
+
+For a global isolated installation, use `pipx install .` instead of
+`poetry install`.
 
 Create one self-contained Compose deployment per site:
 
@@ -114,6 +116,9 @@ vnsite stop ~/sites/faune79
 vnsite restart ~/sites/faune79
 vnsite logs ~/sites/faune79
 ```
+
+On Windows, run `vnsite` from the Poetry environment or use the command
+installed by `pipx`; no Bash, executable permission, or symlink is required.
 
 ## Documentation
 
