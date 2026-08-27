@@ -1,3 +1,4 @@
+import os
 from logging.config import fileConfig
 
 from alembic import context
@@ -24,9 +25,11 @@ target_metadata = None
 
 
 def get_url():
-    url = context.get_x_argument(as_dictionary=True).get("db_url")
+    # Prefer the environment variable, so the URL (and its embedded password)
+    # never appears in the process command line / `ps` output.
+    url = os.environ.get("ALEMBIC_DB_URL") or context.get_x_argument(as_dictionary=True).get("db_url")
     if url is None:
-        print("Database URL must be specified on command line with -x url=<DB_URL>")
+        print("Database URL must be specified via ALEMBIC_DB_URL env var or -x db_url=<DB_URL>")
         raise ValueError
     return url
 
