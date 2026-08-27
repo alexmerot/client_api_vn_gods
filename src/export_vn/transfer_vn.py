@@ -229,6 +229,10 @@ class Jobs:
         logger.debug(_("Number of jobs running, %s"), len(self._job_set))
         return len(self._job_set)
 
+    def count_pending_jobs(self):
+        """Return jobs still queued or currently running."""
+        return len(self._scheduler.get_jobs()) + len(self._job_set)
+
     def print_jobs(self):
         jobs = self._scheduler.get_jobs()
         logger.info(_("Number of jobs scheduled, %s"), len(jobs))
@@ -584,7 +588,7 @@ def full_download(settings: Dynaconf) -> None:
             jobs.add_job_once(job_fn=full_download_1, args=["validations", settings.as_dict()])
 
         # Wait for jobs to finish
-        while jobs.count_jobs() > 0:
+        while jobs.count_pending_jobs() > 0:
             time.sleep(1)
         jobs.shutdown()
 
