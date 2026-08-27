@@ -73,18 +73,15 @@ Validate downloaded data against JSON schemas to ensure data integrity.
 ### Docker Production Installation
 
 The production container uses an external PostgreSQL/PostGIS database. The
-database is not managed by Docker Compose. Install the CLI in a Python
-environment and build the application image from the repository root:
+database is not managed by Docker Compose. Install the site-management CLI
+with `pipx`, then build the application image from the repository root:
 
 ```bash
 git clone https://github.com/alexmerot/client_api_vn_gods
 cd client_api_vn_gods
-poetry install
+pipx install ./tools/vnsite
 docker build -t client_api:latest .
 ```
-
-For a global isolated installation, use `pipx install .` instead of
-`poetry install`.
 
 Create one self-contained Compose deployment per site:
 

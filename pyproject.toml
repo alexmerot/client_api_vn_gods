@@ -48,7 +48,6 @@ config_file = "template.convert_config:run"
 transfer_vn = "export_vn.transfer_vn:run"
 update_vn = "update_vn.update_vn:run"
 validate_vn = "schemas.validate_vn:run"
-vnsite = "vnsite.cli:main"
 
 [tool.poetry]
 packages = [
@@ -56,7 +55,6 @@ packages = [
   { include = "export_vn", from = "src" },
   { include = "schemas", from = "src" },
   { include = "update_vn", from = "src" },
-  { include = "vnsite", from = "src" },
 ]
 
 [tool.poetry.group.dev.dependencies]
