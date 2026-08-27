@@ -4,8 +4,6 @@ Program managing VisioNature export to Postgresql database
 
 """
 
-# ruff: noqa: S602
-
 import argparse
 import contextlib
 import importlib.resources
@@ -379,26 +377,23 @@ def col_table_create(
     tmp_sql = Path.home() / "tmp/create-vn-tables.sql"
     with tmp_sql.open(mode="w") as myfile:
         myfile.write(cmd)
+    psql_cmd = ["psql"]
+    if sql_quiet:
+        psql_cmd.append(sql_quiet)
+    psql_cmd += [
+        f"--host={db_host}",
+        f"--port={db_port}",
+        f"--dbname={db_name}",
+        f"--user={db_user}",
+        f"--file={tmp_sql}",
+    ]
     try:
         subprocess.run(
-            ' PGPASSWORD="'
-            + db_pw
-            + '" PGOPTIONS="-c client-min-messages='
-            + client_min_message
-            + '" psql '
-            + sql_quiet
-            + " --host="
-            + db_host
-            + " --port="
-            + db_port
-            + " --dbname="
-            + db_name
-            + " --user="
-            + db_user
-            + " --file="
-            + str(tmp_sql),
+            psql_cmd,
             check=True,
-            shell=True,
+            shell=False,
+            # Pass password via env, not on the command line, to avoid leaking it via `ps`
+            env={**os.environ, "PGPASSWORD": db_pw, "PGOPTIONS": f"-c client-min-messages={client_min_message}"},
         )
     except subprocess.CalledProcessError:  # pragma: no cover
         logger.exception()
@@ -414,23 +409,22 @@ def migrate(cfg, sql_quiet, client_min_message):
         keep_trailing_newline=True,
         autoescape=True,
     )
+    db_url = f"postgresql://{cfg.db_user}:{cfg.db_pw}@{cfg.db_host}:{cfg.db_port}/{cfg.db_name}"
     try:
         subprocess.run(
-            "alembic -x db_schema_import="
-            + cfg.db_schema_import
-            + " -x db_url=postgresql://"
-            + cfg.db_user
-            + ":"
-            + cfg.db_pw
-            + "@"
-            + cfg.db_host
-            + ":"
-            + cfg.db_port
-            + "/"
-            + cfg.db_name
-            + "--config src/alembic.ini upgrade head",
+            [
+                "alembic",
+                "-x",
+                f"db_schema_import={cfg.db_schema_import}",
+                "-x",
+                f"db_url={db_url}",
+                "--config",
+                "src/alembic.ini",
+                "upgrade",
+                "head",
+            ],
             check=True,
-            shell=True,
+            shell=False,
         )
     except subprocess.CalledProcessError:  # pragma: no cover
         logger.exception()
