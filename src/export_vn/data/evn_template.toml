@@ -276,4 +276,4 @@ pid_delta_days = 10
 # Scheduler tuning parameters.
 sched_executors = 2
 # Scheduler job store file name ; should be unique for each instance
-sched_sqllite_file = "jobstore.sqlite"
+sched_sqllite_file = "config/jobstore.sqlite"
