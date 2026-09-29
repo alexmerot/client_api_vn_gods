@@ -39,9 +39,9 @@ dependencies = [
 ]
 
 [project.urls]
-Repository = "https://github.com/dthonon/Client_API_VN"
-Documentation = "https://dthonon.github.io/Client_API_VN/"
-Issues = "https://github.com/dthonon/Client_API_VN/issues"
+Repository = "https://github.com/alexmerot/client_api_vn_gods"
+Documentation = "https://github.com/alexmerot/client_api_vn_gods/tree/main/docs"
+Issues = "https://github.com/alexmerot/client_api_vn_gods/issues"
 
 [project.scripts]
 config_file = "template.convert_config:run"
