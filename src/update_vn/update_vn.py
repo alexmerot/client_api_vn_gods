@@ -15,7 +15,6 @@ Modification are tracked in hidden_comment.
 
 """
 
-import ast
 import contextlib
 import csv
 import datetime
@@ -198,7 +197,7 @@ def update(config: str, input_file: str) -> None:
         raise FileNotFoundError
 
     # Log only non-secret fields; avoid leaking user_pw/client_key/client_secret
-    logger.debug(_("Site configuration: site=%s, user_email=%s"), cfg.site, cfg.user_email)  # pyright: ignore[reportOptionalMemberAccess]
+    logger.debug(_("Site configuration: site=%s, user_email=%s"), site, cfg.user_email)  # pyright: ignore[reportOptionalMemberAccess]
     obs_api = {}
     logger.debug(_("Preparing update for site %s"), site)
     obs_api[site] = ObservationsAPI(
