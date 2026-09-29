@@ -309,12 +309,16 @@ def init(config: str):
     toml_dst = Path.home() / config
     if toml_dst.is_file():
         logger.warning(_("toml configuration file %s exists and is not overwritten"), toml_dst)
+        if os.name != "nt":
+            toml_dst.chmod(0o600)
     else:
         logger.info(_("Creating toml configuration file"))
         ref = importlib.resources.files(__name__.split(".")[0]) / "data/evn_template.toml"
         with importlib.resources.as_file(ref) as toml_src:
             logger.info(_("Creating toml configuration file %s, from %s"), toml_dst, toml_src)
             shutil.copyfile(toml_src, toml_dst)
+            if os.name != "nt":
+                toml_dst.chmod(0o600)
             logger.info(_("Please edit %s before running the script"), toml_dst)
 
 
