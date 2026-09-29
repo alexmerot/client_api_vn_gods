@@ -35,6 +35,11 @@ def _copy_template(name: str, destination: Path) -> None:
         shutil.copyfileobj(source, target)
 
 
+def _restrict_permissions(path: Path, mode: int) -> None:
+    if os.name != "nt":
+        path.chmod(mode)
+
+
 @click.group()
 def main() -> None:
     """Create and manage Client_API_VN site deployments."""
@@ -58,11 +63,11 @@ def create(path: str) -> None:
             env_path.read_text(encoding="utf-8").replace("SITE=faune79", f"SITE={site_name}"),
             encoding="utf-8",
         )
+    _restrict_permissions(env_path, 0o600)
 
     for directory in (site_path / "data", site_path / "logs", site_path / "config"):
         directory.mkdir(exist_ok=True)
-        if os.name != "nt":
-            directory.chmod(0o700)
+        _restrict_permissions(directory, 0o700)
     click.echo(f"Created {site_path}. Edit {env_path}, then run: vnsite start {site_path}")
 
 
