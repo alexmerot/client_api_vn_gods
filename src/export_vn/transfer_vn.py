@@ -519,6 +519,7 @@ def full_download_1(ctrl: str, settings: dict) -> None:
             ).store(
                 taxo_groups_ex=taxo_exclude,
                 territorial_unit_ids=settings["FILTER"]["territorial_unit_ids"],
+                short_version="0" if settings["FILTER"].get("json_format", "short") == "long" else "1",
             )
         elif (ctrl == "local_admin_units") or (ctrl == "places"):
             logger.info(
@@ -670,6 +671,7 @@ def increment_download_1(ctrl: str, settings: dict) -> None:
             ).update(
                 taxo_groups_ex=taxo_exclude,
                 territorial_unit_ids=settings["FILTER"]["territorial_unit_ids"],
+                short_version="0" if settings["FILTER"].get("json_format", "short") == "long" else "1",
             )
         elif ctrl == "places":
             CTRL_DEFS[ctrl](
@@ -944,12 +946,6 @@ def main(args) -> None:
 
     cfg_site_list = settings.site
     cfg = next(iter(cfg_site_list.values()))
-    # Check configuration consistency
-    if settings.database.enabled and settings.filter.json_format != "short":
-        logger.critical(_("Storing to Postgresql cannot use long json_format."))
-        logger.critical(_("Please modify TOML configuration and restart."))
-        sys.exit(0)
-
     manage_pg = PostgresqlUtils(
         settings.database.enabled,
         settings.database.db_user,

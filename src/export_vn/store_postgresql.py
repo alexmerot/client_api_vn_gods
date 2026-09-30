@@ -121,6 +121,10 @@ def store_1_observation(item):
     # Insert simple sightings,
     # each row contains id, update timestamp and full json body
     elem = item.elem
+    # Long JSON format gives dates as {"@timestamp": ...}; flatten to the short format used by the SQL triggers
+    for date_key in ("insert_date", "update_date"):
+        if isinstance(elem["observers"][0].get(date_key), dict):
+            elem["observers"][0][date_key] = elem["observers"][0][date_key]["@timestamp"]
     # Find last update timestamp
     if "update_date" in elem["observers"][0]:
         # update_date = elem['observers'][0]['update_date']['@timestamp']
