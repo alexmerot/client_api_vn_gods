@@ -735,8 +735,8 @@ CREATE OR REPLACE FUNCTION update_observations() RETURNS TRIGGER AS $$
             mortality         = CAST(((((NEW.item -> 'observers') -> 0) #>> '{extended_info,mortality}'::text []) is not null) as BOOLEAN),
             death_cause2      = ((NEW.item -> 'observers') -> 0) #>> '{extended_info, mortality, death_cause2}',
             id_taxref         = NEW.item #>> '{species,id_taxref,#text}',
-            gps_lat           = CAST(NULLIF(((NEW.item -> 'observers') -> 0) ->> 'gps_lat', '') AS FLOAT),
-            gps_lon           = CAST(NULLIF(((NEW.item -> 'observers') -> 0) ->> 'gps_lon', '') AS FLOAT),
+            gps_lat           = CAST(NULLIF(NULLIF(((NEW.item -> 'observers') -> 0) ->> 'gps_lat', ''), 'null') AS FLOAT),
+            gps_lon           = CAST(NULLIF(NULLIF(((NEW.item -> 'observers') -> 0) ->> 'gps_lon', ''), 'null') AS FLOAT),
             gradation         = ((NEW.item -> 'observers') -> 0) ->> 'gradation',
             insert_date       = to_timestamp(CAST(((NEW.item -> 'observers') -> 0) ->> 'insert_date' AS DOUBLE PRECISION)),
             update_date       = to_timestamp(NEW.update_ts)
@@ -787,8 +787,8 @@ CREATE OR REPLACE FUNCTION update_observations() RETURNS TRIGGER AS $$
                 CAST(((((NEW.item -> 'observers') -> 0) #>> '{extended_info,mortality}'::text []) is not null) as BOOLEAN),
                 ((NEW.item -> 'observers') -> 0) #>> '{extended_info, mortality, death_cause2}',
                 NEW.item #>> '{species,id_taxref,#text}',
-                CAST(NULLIF(((NEW.item -> 'observers') -> 0) ->> 'gps_lat', '') AS FLOAT),
-                CAST(NULLIF(((NEW.item -> 'observers') -> 0) ->> 'gps_lon', '') AS FLOAT),
+                CAST(NULLIF(NULLIF(((NEW.item -> 'observers') -> 0) ->> 'gps_lat', ''), 'null') AS FLOAT),
+                CAST(NULLIF(NULLIF(((NEW.item -> 'observers') -> 0) ->> 'gps_lon', ''), 'null') AS FLOAT),
                 ((NEW.item -> 'observers') -> 0) ->> 'gradation',
                 to_timestamp(CAST(((NEW.item -> 'observers') -> 0) ->> 'insert_date' AS DOUBLE PRECISION)),
                 to_timestamp(NEW.update_ts));
@@ -840,8 +840,8 @@ CREATE OR REPLACE FUNCTION update_observations() RETURNS TRIGGER AS $$
             CAST(((((NEW.item -> 'observers') -> 0) #>> '{extended_info,mortality}'::text []) is not null) as BOOLEAN),
             ((NEW.item -> 'observers') -> 0) #>> '{extended_info, mortality, death_cause2}',
             NEW.item #>> '{species,id_taxref,#text}',
-            CAST(NULLIF(((NEW.item -> 'observers') -> 0) ->> 'gps_lat', '') AS FLOAT),
-            CAST(NULLIF(((NEW.item -> 'observers') -> 0) ->> 'gps_lon', '') AS FLOAT),
+            CAST(NULLIF(NULLIF(((NEW.item -> 'observers') -> 0) ->> 'gps_lat', ''), 'null') AS FLOAT),
+            CAST(NULLIF(NULLIF(((NEW.item -> 'observers') -> 0) ->> 'gps_lon', ''), 'null') AS FLOAT),
             ((NEW.item -> 'observers') -> 0) ->> 'gradation',
             to_timestamp(CAST(((NEW.item -> 'observers') -> 0) ->> 'insert_date' AS DOUBLE PRECISION)),
             to_timestamp(NEW.update_ts));
