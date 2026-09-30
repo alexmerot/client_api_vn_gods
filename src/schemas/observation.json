@@ -100,6 +100,9 @@
             "trace_length": {
                 "type": "string"
             },
+            "trace_type": {
+                "type": "string"
+            },
             "version": {
                 "type": "string",
                 "pattern": "^-?[0-9]+$"
@@ -242,6 +245,15 @@
                     }
                 }
             },
+            "id_taxref": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "#text": {
+                        "type": "string"
+                    }
+                }
+            },
             "dir_habitat": {
                 "type": "object",
                 "additionalProperties": false,
@@ -255,7 +267,7 @@
                 }
             },
             "dir_oiseaux": {
-                "OneOf": [
+                "oneOf": [
                     {
                         "$ref": "#/_dir_oiseaux_id"
                     },
@@ -565,7 +577,7 @@
                 }
             },
             "chiro_identify": {
-                "OneOf": [
+                "oneOf": [
                     {
                         "$ref": "#/_chiro_identify_id"
                     },
@@ -631,6 +643,12 @@
                 "title": "COORD_LON",
                 "description": "Longitude (WGS84) of the observation"
             },
+            "gps_lat": {
+                "type": "string"
+            },
+            "gps_lon": {
+                "type": "string"
+            },
             "count": {
                 "type": "string",
                 "pattern": "^-?[0-9]+$",
@@ -673,6 +691,9 @@
             "flight_number": {
                 "type": "string",
                 "pattern": "^-?[0-9]+$"
+            },
+            "gradation": {
+                "type": "string"
             },
             "has_colony": {
                 "type": "string",
@@ -871,7 +892,7 @@
     },
     "_dir_oiseaux_id": {
         "type": "string",
-        "enum": ["1", "2", "3", "4"]
+        "enum": ["1", "2", "3", "4", "I", "II", "III", "IV", "II/III"]
     },
     "_uicn_id": {
         "type": "string",
@@ -912,7 +933,7 @@
                 "$ref": "#/_age"
             },
             "condition": {
-                "OneOf": [
+                "oneOf": [
                     {
                         "$ref": "#/_condition_id"
                     },
@@ -931,7 +952,7 @@
                 ]
             },
             "distance": {
-                "OneOf": [
+                "oneOf": [
                     {
                         "$ref": "#/_distance_id"
                     },
@@ -1106,7 +1127,7 @@
                             "pattern": "^-?[0-9]+$"
                         },
                         "behaviour": {
-                            "OneOf": [
+                            "oneOf": [
                                 {
                                     "$ref": "#/_gypaetus_barbatus_behaviour"
                                 },
@@ -1161,7 +1182,7 @@
                             }
                         },
                         "interaction": {
-                            "OneOf": [
+                            "oneOf": [
                                 {
                                     "$ref": "#/_interaction_id"
                                 },
@@ -1180,7 +1201,7 @@
                             ]
                         },
                         "interaction_benefit": {
-                            "OneOf": [
+                            "oneOf": [
                                 {
                                     "$ref": "#/_interaction_benefit_id"
                                 },
@@ -1702,7 +1723,7 @@
         "title": "_behaviour"
     },
     "_sex": {
-        "OneOf": [
+        "oneOf": [
             {
                 "$ref": "#/_sex_id"
             },
@@ -1727,7 +1748,7 @@
         "description": ""
     },
     "_age": {
-        "OneOf": [
+        "oneOf": [
             {
                 "$ref": "#/_age_id"
             },
@@ -1793,7 +1814,7 @@
         "description": ""
     },
     "_section": {
-        "OneOf": [
+        "oneOf": [
             {
                 "$ref": "#/_section_id"
             },
@@ -2047,7 +2068,7 @@
                 "pattern": "^-?[0-9]+$"
             },
             "habitat": {
-                "OneOf": [
+                "oneOf": [
                     {
                         "$ref": "#/_habitat_id"
                     },
@@ -2140,7 +2161,7 @@
                 "type": "string"
             },
             "stoc_cloud": {
-                "OneOf": [
+                "oneOf": [
                     {
                         "$ref": "#/_stoc_cloud_id"
                     },
@@ -2159,7 +2180,7 @@
                 ]
             },
             "stoc_rain": {
-                "OneOf": [
+                "oneOf": [
                     {
                         "$ref": "#/_stoc_rain_id"
                     },
@@ -2178,7 +2199,7 @@
                 ]
             },
             "stoc_snow": {
-                "OneOf": [
+                "oneOf": [
                     {
                         "$ref": "#/_stoc_snow_id"
                     },
@@ -2197,7 +2218,7 @@
                 ]
             },
             "stoc_transport": {
-                "OneOf": [
+                "oneOf": [
                     {
                         "$ref": "#/_stoc_transport_id"
                     },
@@ -2216,7 +2237,7 @@
                 ]
             },
             "stoc_visibility": {
-                "OneOf": [
+                "oneOf": [
                     {
                         "$ref": "#/_stoc_visibility_id"
                     },
@@ -2235,7 +2256,7 @@
                 ]
             },
             "stoc_wind": {
-                "OneOf": [
+                "oneOf": [
                     {
                         "$ref": "#/_stoc_wind_id"
                     },
@@ -2258,7 +2279,7 @@
                 "pattern": "^-?[0-9]+$"
             },
             "waterbird_conditions": {
-                "OneOf": [
+                "oneOf": [
                     {
                         "$ref": "#/_waterbird_conditions_id"
                     },
@@ -2277,7 +2298,7 @@
                 ]
             },
             "waterbird_conditions_reason": {
-                "OneOf": [
+                "oneOf": [
                     {
                         "$ref": "#/_waterbird_conditions_reason_id"
                     },
@@ -2299,7 +2320,7 @@
                 "$ref": "#/_yes_no"
             },
             "waterbird_countmethod": {
-                "OneOf": [
+                "oneOf": [
                     {
                         "$ref": "#/_waterbird_count_method_id"
                     },
@@ -2318,7 +2339,7 @@
                 ]
             },
             "waterbird_counttype": {
-                "OneOf": [
+                "oneOf": [
                     {
                         "$ref": "#/_waterbird_count_type_id"
                     },
@@ -2337,7 +2358,7 @@
                 ]
             },
             "waterbird_coverage": {
-                "OneOf": [
+                "oneOf": [
                     {
                         "$ref": "#/_waterbird_coverage_id"
                     },
@@ -2356,7 +2377,7 @@
                 ]
             },
             "waterbird_ice": {
-                "OneOf": [
+                "oneOf": [
                     {
                         "$ref": "#/_waterbird_ice_id"
                     },
@@ -2375,7 +2396,7 @@
                 ]
             },
             "waterbird_optical": {
-                "OneOf": [
+                "oneOf": [
                     {
                         "$ref": "#/_waterbird_optical_id"
                     },
@@ -2394,7 +2415,7 @@
                 ]
             },
             "waterbird_snowcover": {
-                "OneOf": [
+                "oneOf": [
                     {
                         "$ref": "#/_waterbird_snow_cover_id"
                     },
@@ -2413,7 +2434,7 @@
                 ]
             },
             "waterbird_visibility": {
-                "OneOf": [
+                "oneOf": [
                     {
                         "$ref": "#/_waterbird_visibility_id"
                     },
@@ -2432,7 +2453,7 @@
                 ]
             },
             "waterbird_waterlevel": {
-                "OneOf": [
+                "oneOf": [
                     {
                         "$ref": "#/_waterbird_water_level_id"
                     },
@@ -2451,7 +2472,7 @@
                 ]
             },
             "waterbird_waves": {
-                "OneOf": [
+                "oneOf": [
                     {
                         "$ref": "#/_waterbird_waves_id"
                     },
@@ -2528,7 +2549,7 @@
         "enum": ["MODERATE", "NONE", "SMALL", "UNKNOWN"]
     },
     "_direction": {
-        "OneOf": [
+        "oneOf": [
             {
                 "$ref": "#/_direction_id"
             },
@@ -2563,7 +2584,7 @@
         "title": "_interaction_benefit_id"
     },
     "_weather": {
-        "OneOf": [
+        "oneOf": [
             {
                 "$ref": "#/_weather_id"
             },
@@ -2610,7 +2631,7 @@
         "title": "_place_type_id"
     },
     "_yes_no": {
-        "OneOf": [
+        "oneOf": [
             {
                 "$ref": "#/_yes_no_id"
             },

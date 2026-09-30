@@ -624,6 +624,10 @@ CREATE TABLE {{ db_schema_vn }}.observations (
     confirmed_by        TEXT,
     mortality           BOOLEAN,
     death_cause2        TEXT,
+    id_taxref           TEXT,
+    gps_lat             FLOAT,
+    gps_lon             FLOAT,
+    gradation           TEXT,
     insert_date         TIMESTAMP,
     update_date         TIMESTAMP,
     geom                GEOMETRY(Point, {{ proj }}),
@@ -730,6 +734,10 @@ CREATE OR REPLACE FUNCTION update_observations() RETURNS TRIGGER AS $$
             confirmed_by      = ((NEW.item -> 'observers') -> 0) ->> 'confirmed_by',
             mortality         = CAST(((((NEW.item -> 'observers') -> 0) #>> '{extended_info,mortality}'::text []) is not null) as BOOLEAN),
             death_cause2      = ((NEW.item -> 'observers') -> 0) #>> '{extended_info, mortality, death_cause2}',
+            id_taxref         = NEW.item #>> '{species,id_taxref,#text}',
+            gps_lat           = CAST(NULLIF(((NEW.item -> 'observers') -> 0) ->> 'gps_lat', '') AS FLOAT),
+            gps_lon           = CAST(NULLIF(((NEW.item -> 'observers') -> 0) ->> 'gps_lon', '') AS FLOAT),
+            gradation         = ((NEW.item -> 'observers') -> 0) ->> 'gradation',
             insert_date       = to_timestamp(CAST(((NEW.item -> 'observers') -> 0) ->> 'insert_date' AS DOUBLE PRECISION)),
             update_date       = to_timestamp(NEW.update_ts)
         WHERE id_sighting = OLD.id AND site = OLD.site;
@@ -740,7 +748,8 @@ CREATE OR REPLACE FUNCTION update_observations() RETURNS TRIGGER AS $$
                                              id_species, taxonomy, date, date_year, timing, id_place, place, insee,
                                              coord_lat, coord_lon, coord_x_local, coord_y_local, precision, source, estimation_code,
                                              count, atlas_code, altitude, project_code, hidden, admin_hidden, observer_uid, details,
-                                             behaviours, comment, hidden_comment, confirmed_by, mortality, death_cause2, insert_date, update_date)
+                                             behaviours, comment, hidden_comment, confirmed_by, mortality, death_cause2, id_taxref, gps_lat, gps_lon, gradation,
+                                             insert_date, update_date)
             VALUES (
                 NEW.site,
                 NEW.id,
@@ -777,6 +786,10 @@ CREATE OR REPLACE FUNCTION update_observations() RETURNS TRIGGER AS $$
                 ((NEW.item -> 'observers') -> 0) ->> 'confirmed_by',
                 CAST(((((NEW.item -> 'observers') -> 0) #>> '{extended_info,mortality}'::text []) is not null) as BOOLEAN),
                 ((NEW.item -> 'observers') -> 0) #>> '{extended_info, mortality, death_cause2}',
+                NEW.item #>> '{species,id_taxref,#text}',
+                CAST(NULLIF(((NEW.item -> 'observers') -> 0) ->> 'gps_lat', '') AS FLOAT),
+                CAST(NULLIF(((NEW.item -> 'observers') -> 0) ->> 'gps_lon', '') AS FLOAT),
+                ((NEW.item -> 'observers') -> 0) ->> 'gradation',
                 to_timestamp(CAST(((NEW.item -> 'observers') -> 0) ->> 'insert_date' AS DOUBLE PRECISION)),
                 to_timestamp(NEW.update_ts));
             END IF;
@@ -788,7 +801,8 @@ CREATE OR REPLACE FUNCTION update_observations() RETURNS TRIGGER AS $$
                                          id_species, taxonomy, date, date_year, timing, id_place, place, insee,
                                          coord_lat, coord_lon, coord_x_local, coord_y_local, source, precision, estimation_code,
                                          count, atlas_code, altitude, project_code, hidden, admin_hidden, observer_uid, details,
-                                         behaviours, comment, hidden_comment, confirmed_by, mortality, death_cause2, insert_date, update_date)
+                                         behaviours, comment, hidden_comment, confirmed_by, mortality, death_cause2, id_taxref, gps_lat, gps_lon, gradation,
+                                         insert_date, update_date)
         VALUES (
             NEW.site,
             NEW.id,
@@ -825,6 +839,10 @@ CREATE OR REPLACE FUNCTION update_observations() RETURNS TRIGGER AS $$
             ((NEW.item -> 'observers') -> 0) ->> 'confirmed_by',
             CAST(((((NEW.item -> 'observers') -> 0) #>> '{extended_info,mortality}'::text []) is not null) as BOOLEAN),
             ((NEW.item -> 'observers') -> 0) #>> '{extended_info, mortality, death_cause2}',
+            NEW.item #>> '{species,id_taxref,#text}',
+            CAST(NULLIF(((NEW.item -> 'observers') -> 0) ->> 'gps_lat', '') AS FLOAT),
+            CAST(NULLIF(((NEW.item -> 'observers') -> 0) ->> 'gps_lon', '') AS FLOAT),
+            ((NEW.item -> 'observers') -> 0) ->> 'gradation',
             to_timestamp(CAST(((NEW.item -> 'observers') -> 0) ->> 'insert_date' AS DOUBLE PRECISION)),
             to_timestamp(NEW.update_ts));
         RETURN NEW;
