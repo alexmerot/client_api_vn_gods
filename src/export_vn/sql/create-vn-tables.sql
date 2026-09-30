@@ -628,6 +628,7 @@ CREATE TABLE {{ db_schema_vn }}.observations (
     gps_lat             FLOAT,
     gps_lon             FLOAT,
     gradation           TEXT,
+    auditory_contact    BOOLEAN,
     insert_date         TIMESTAMP,
     update_date         TIMESTAMP,
     geom                GEOMETRY(Point, {{ proj }}),
@@ -738,6 +739,7 @@ CREATE OR REPLACE FUNCTION update_observations() RETURNS TRIGGER AS $$
             gps_lat           = CAST(NULLIF(NULLIF(((NEW.item -> 'observers') -> 0) ->> 'gps_lat', ''), 'null') AS FLOAT),
             gps_lon           = CAST(NULLIF(NULLIF(((NEW.item -> 'observers') -> 0) ->> 'gps_lon', ''), 'null') AS FLOAT),
             gradation         = ((NEW.item -> 'observers') -> 0) ->> 'gradation',
+            auditory_contact  = CAST(((NEW.item -> 'observers') -> 0) ->> 'auditory_contact' AS BOOLEAN),
             insert_date       = to_timestamp(CAST(((NEW.item -> 'observers') -> 0) ->> 'insert_date' AS DOUBLE PRECISION)),
             update_date       = to_timestamp(NEW.update_ts)
         WHERE id_sighting = OLD.id AND site = OLD.site;
@@ -748,7 +750,7 @@ CREATE OR REPLACE FUNCTION update_observations() RETURNS TRIGGER AS $$
                                              id_species, taxonomy, date, date_year, timing, id_place, place, insee,
                                              coord_lat, coord_lon, coord_x_local, coord_y_local, precision, source, estimation_code,
                                              count, atlas_code, altitude, project_code, hidden, admin_hidden, observer_uid, details,
-                                             behaviours, comment, hidden_comment, confirmed_by, mortality, death_cause2, id_taxref, gps_lat, gps_lon, gradation,
+                                             behaviours, comment, hidden_comment, confirmed_by, mortality, death_cause2, id_taxref, gps_lat, gps_lon, gradation, auditory_contact,
                                              insert_date, update_date)
             VALUES (
                 NEW.site,
@@ -790,6 +792,7 @@ CREATE OR REPLACE FUNCTION update_observations() RETURNS TRIGGER AS $$
                 CAST(NULLIF(NULLIF(((NEW.item -> 'observers') -> 0) ->> 'gps_lat', ''), 'null') AS FLOAT),
                 CAST(NULLIF(NULLIF(((NEW.item -> 'observers') -> 0) ->> 'gps_lon', ''), 'null') AS FLOAT),
                 ((NEW.item -> 'observers') -> 0) ->> 'gradation',
+                CAST(((NEW.item -> 'observers') -> 0) ->> 'auditory_contact' AS BOOLEAN),
                 to_timestamp(CAST(((NEW.item -> 'observers') -> 0) ->> 'insert_date' AS DOUBLE PRECISION)),
                 to_timestamp(NEW.update_ts));
             END IF;
@@ -801,7 +804,7 @@ CREATE OR REPLACE FUNCTION update_observations() RETURNS TRIGGER AS $$
                                          id_species, taxonomy, date, date_year, timing, id_place, place, insee,
                                          coord_lat, coord_lon, coord_x_local, coord_y_local, source, precision, estimation_code,
                                          count, atlas_code, altitude, project_code, hidden, admin_hidden, observer_uid, details,
-                                         behaviours, comment, hidden_comment, confirmed_by, mortality, death_cause2, id_taxref, gps_lat, gps_lon, gradation,
+                                         behaviours, comment, hidden_comment, confirmed_by, mortality, death_cause2, id_taxref, gps_lat, gps_lon, gradation, auditory_contact,
                                          insert_date, update_date)
         VALUES (
             NEW.site,
@@ -843,6 +846,7 @@ CREATE OR REPLACE FUNCTION update_observations() RETURNS TRIGGER AS $$
             CAST(NULLIF(NULLIF(((NEW.item -> 'observers') -> 0) ->> 'gps_lat', ''), 'null') AS FLOAT),
             CAST(NULLIF(NULLIF(((NEW.item -> 'observers') -> 0) ->> 'gps_lon', ''), 'null') AS FLOAT),
             ((NEW.item -> 'observers') -> 0) ->> 'gradation',
+            CAST(((NEW.item -> 'observers') -> 0) ->> 'auditory_contact' AS BOOLEAN),
             to_timestamp(CAST(((NEW.item -> 'observers') -> 0) ->> 'insert_date' AS DOUBLE PRECISION)),
             to_timestamp(NEW.update_ts));
         RETURN NEW;
