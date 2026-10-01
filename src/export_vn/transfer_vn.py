@@ -86,7 +86,9 @@ class Jobs:
             else:
                 logger.error(_("The job %s is not in job_set"), event.job_id)  # pragma: no cover
             if event.exception:
-                logger.error(_("The job %s crashed"), event.job_id)  # pragma: no cover
+                logger.error(
+                    _("The job %s crashed: %r\n%s"), event.job_id, event.exception, event.traceback
+                )  # pragma: no cover
             else:
                 logger.debug(_("The job %s worked"), event.job_id)
         logger.debug(_("Job set: %s"), self._job_set)
@@ -1024,7 +1026,12 @@ def main(args) -> None:
 
 def run() -> None:
     """Entry point for console_scripts."""
-    main(sys.argv[1:])
+    try:
+        main(sys.argv[1:])
+    except Exception:
+        # Ensure fatal errors reach the log file and the console
+        logger.critical(_("Unhandled exception, stopping"), exc_info=True)
+        sys.exit(1)
 
 
 # Main wrapper

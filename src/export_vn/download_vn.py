@@ -163,6 +163,7 @@ class DownloadVn:
                 # Call backend to store results
                 self._backend.store(self._api_instance.controler, file_id + str(i), items_dict)
         except HTTPError:
+            logger.exception(_("HTTP error during download"))
             self._backend.log(
                 self._site,
                 self._api_instance.controler,
@@ -359,6 +360,7 @@ class Fields(DownloadVn):
                     # Call backend to store groups of fields
                     self._backend.store("field_details", str(i), field_details)
         except HTTPError:
+            logger.exception(_("HTTP error during download"))
             self._backend.log(
                 self._site,
                 self._api_instance.controler,
@@ -726,6 +728,7 @@ class Observations(DownloadVn):
                         )
                     self._backend.increment_log(self._site, id_taxo_group, update_ts)
         except HTTPError:
+            logger.exception(_("HTTP error during download"))
             self._backend.log(
                 self._site,
                 self._api_instance.controler,
@@ -921,6 +924,7 @@ class Observations(DownloadVn):
                         end_date = start_date
                         delta_days = int(pid(nb_obs))
         except HTTPError:
+            logger.exception(_("HTTP error during download"))
             self._backend.log(
                 self._site,
                 self._api_instance.controler,
@@ -1185,6 +1189,7 @@ class Observations(DownloadVn):
                                 timing,
                             )
                 except HTTPError:
+                    logger.exception(_("HTTP error during download"))
                     self._backend.log(
                         self._site,
                         self._api_instance.controler,
