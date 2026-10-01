@@ -34,6 +34,7 @@ from pytz import utc
 from sqlalchemy.engine.url import URL
 from tabulate import tabulate
 
+from biolovision.api import RedactingFormatter
 from export_vn.download_vn import (
     Entities,
     Families,
@@ -862,7 +863,7 @@ def main(args) -> None:
     # create console handler with a higher log level
     ch = logging.StreamHandler()
     # create formatter and add it to the handlers
-    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(name)s - %(message)s")
+    formatter = RedactingFormatter("%(asctime)s - %(levelname)s - %(name)s - %(message)s")
     fh.setFormatter(formatter)
     ch.setFormatter(formatter)
     # add the handlers to the root logger
