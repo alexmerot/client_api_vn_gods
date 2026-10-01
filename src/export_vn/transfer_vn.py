@@ -34,6 +34,7 @@ from pytz import utc
 from sqlalchemy.engine.url import URL
 from tabulate import tabulate
 
+from biolovision.api import RedactingFormatter
 from export_vn.download_vn import (
     Entities,
     Families,
@@ -86,7 +87,9 @@ class Jobs:
             else:
                 logger.error(_("The job %s is not in job_set"), event.job_id)  # pragma: no cover
             if event.exception:
-                logger.error(_("The job %s crashed"), event.job_id)  # pragma: no cover
+                logger.error(
+                    _("The job %s crashed: %r\n%s"), event.job_id, event.exception, event.traceback
+                )  # pragma: no cover
             else:
                 logger.debug(_("The job %s worked"), event.job_id)
         logger.debug(_("Job set: %s"), self._job_set)
@@ -519,6 +522,7 @@ def full_download_1(ctrl: str, settings: dict) -> None:
             ).store(
                 taxo_groups_ex=taxo_exclude,
                 territorial_unit_ids=settings["FILTER"]["territorial_unit_ids"],
+                short_version="0" if settings["FILTER"].get("json_format", "short") == "long" else "1",
             )
         elif (ctrl == "local_admin_units") or (ctrl == "places"):
             logger.info(
@@ -670,6 +674,7 @@ def increment_download_1(ctrl: str, settings: dict) -> None:
             ).update(
                 taxo_groups_ex=taxo_exclude,
                 territorial_unit_ids=settings["FILTER"]["territorial_unit_ids"],
+                short_version="0" if settings["FILTER"].get("json_format", "short") == "long" else "1",
             )
         elif ctrl == "places":
             CTRL_DEFS[ctrl](
@@ -858,7 +863,7 @@ def main(args) -> None:
     # create console handler with a higher log level
     ch = logging.StreamHandler()
     # create formatter and add it to the handlers
-    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(name)s - %(message)s")
+    formatter = RedactingFormatter("%(asctime)s - %(levelname)s - %(name)s - %(message)s")
     fh.setFormatter(formatter)
     ch.setFormatter(formatter)
     # add the handlers to the root logger
@@ -944,12 +949,6 @@ def main(args) -> None:
 
     cfg_site_list = settings.site
     cfg = next(iter(cfg_site_list.values()))
-    # Check configuration consistency
-    if settings.database.enabled and settings.filter.json_format != "short":
-        logger.critical(_("Storing to Postgresql cannot use long json_format."))
-        logger.critical(_("Please modify TOML configuration and restart."))
-        sys.exit(0)
-
     manage_pg = PostgresqlUtils(
         settings.database.enabled,
         settings.database.db_user,
@@ -1028,7 +1027,12 @@ def main(args) -> None:
 
 def run() -> None:
     """Entry point for console_scripts."""
-    main(sys.argv[1:])
+    try:
+        main(sys.argv[1:])
+    except Exception:
+        # Ensure fatal errors reach the log file and the console
+        logger.critical(_("Unhandled exception, stopping"), exc_info=True)
+        sys.exit(1)
 
 
 # Main wrapper

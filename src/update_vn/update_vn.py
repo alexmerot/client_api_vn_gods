@@ -32,7 +32,7 @@ import click
 import pandas as pd
 from dynaconf import Dynaconf, ValidationError, Validator
 
-from biolovision.api import ObservationsAPI
+from biolovision.api import ObservationsAPI, RedactingFormatter
 
 from . import __version__
 
@@ -108,7 +108,7 @@ def main(
     # Create console handler with a higher log level
     ch = logging.StreamHandler()
     # Create formatter and add it to the handlers
-    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(name)s - %(message)s")
+    formatter = RedactingFormatter("%(asctime)s - %(levelname)s - %(name)s - %(message)s")
     fh.setFormatter(formatter)
     ch.setFormatter(formatter)
     # Add the handlers to the logger

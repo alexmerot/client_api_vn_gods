@@ -149,7 +149,7 @@ class DownloadVn:
                 logger.debug(log_msg)
                 timing = perf_counter_ns()
                 items_dict = self._api_instance.api_list(opt_params=opt_params)
-                timing = (perf_counter_ns() - timing) / 1000
+                timing = (perf_counter_ns() - timing) / 1_000_000
                 # Call backend to store generic log
                 self._backend.log(
                     self._site,
@@ -163,6 +163,7 @@ class DownloadVn:
                 # Call backend to store results
                 self._backend.store(self._api_instance.controler, file_id + str(i), items_dict)
         except HTTPError:
+            logger.exception(_("HTTP error during download"))
             self._backend.log(
                 self._site,
                 self._api_instance.controler,
@@ -335,7 +336,7 @@ class Fields(DownloadVn):
                 logger.debug(log_msg)
                 timing = perf_counter_ns()
                 items_dict = self._api_instance.api_list(opt_params=opt_params)
-                timing = (perf_counter_ns() - timing) / 1000
+                timing = (perf_counter_ns() - timing) / 1_000_000
                 # Call backend to store generic log
                 self._backend.log(
                     self._site,
@@ -359,6 +360,7 @@ class Fields(DownloadVn):
                     # Call backend to store groups of fields
                     self._backend.store("field_details", str(i), field_details)
         except HTTPError:
+            logger.exception(_("HTTP error during download"))
             self._backend.log(
                 self._site,
                 self._api_instance.controler,
@@ -683,7 +685,7 @@ class Observations(DownloadVn):
                                     id_species=specie["id"],
                                     short_version=short_version,
                                 )
-                                timing = (perf_counter_ns() - timing) / 1000
+                                timing = (perf_counter_ns() - timing) / 1_000_000
                                 # Call backend to store list by taxo_group, species log
                                 self._backend.log(
                                     self._site,
@@ -707,7 +709,7 @@ class Observations(DownloadVn):
                     else:
                         timing = perf_counter_ns()
                         items_dict = self._api_instance.api_list(id_taxo_group, short_version=short_version)
-                        timing = (perf_counter_ns() - timing) / 1000
+                        timing = (perf_counter_ns() - timing) / 1_000_000
                         # Call backend to store list by taxo_group log
                         self._backend.log(
                             self._site,
@@ -726,6 +728,7 @@ class Observations(DownloadVn):
                         )
                     self._backend.increment_log(self._site, id_taxo_group, update_ts)
         except HTTPError:
+            logger.exception(_("HTTP error during download"))
             self._backend.log(
                 self._site,
                 self._api_instance.controler,
@@ -878,7 +881,7 @@ class Observations(DownloadVn):
 
                             timing = perf_counter_ns()
                             items_dict = self._api_instance.api_search(q_param, short_version=short_version)
-                            timing = (perf_counter_ns() - timing) / 1000
+                            timing = (perf_counter_ns() - timing) / 1_000_000
 
                             # Call backend to store results
                             nb_o = self._backend.store(
@@ -921,6 +924,7 @@ class Observations(DownloadVn):
                         end_date = start_date
                         delta_days = int(pid(nb_obs))
         except HTTPError:
+            logger.exception(_("HTTP error during download"))
             self._backend.log(
                 self._site,
                 self._api_instance.controler,
@@ -1164,7 +1168,7 @@ class Observations(DownloadVn):
                                 id_sightings_list=s_list,
                                 short_version=short_version,
                             )
-                            timing = (perf_counter_ns() - timing) / 1000
+                            timing = (perf_counter_ns() - timing) / 1_000_000
 
                             # Call backend to store results
                             tu_suffix = "_" + str(id_territorial_unit) if id_territorial_unit else ""
@@ -1185,6 +1189,7 @@ class Observations(DownloadVn):
                                 timing,
                             )
                 except HTTPError:
+                    logger.exception(_("HTTP error during download"))
                     self._backend.log(
                         self._site,
                         self._api_instance.controler,
@@ -1474,7 +1479,7 @@ class Places(DownloadVn):
                 logger.debug(_("Updating place %s"), updated[i])
                 timing = perf_counter_ns()
                 items_dict = self._api_instance.api_get(updated[i])
-                timing = (perf_counter_ns() - timing) / 1000
+                timing = (perf_counter_ns() - timing) / 1_000_000
 
                 # Call backend to store results
                 self._backend.store(

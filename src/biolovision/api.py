@@ -35,6 +35,16 @@ class HashableDict(dict):
         return hash(frozenset(self))
 
 
+_SECRET_PARAMS = re.compile(r"(user_pw|user_email|oauth_signature|oauth_token)=[^&\s\"']*")
+
+
+class RedactingFormatter(logging.Formatter):
+    """Formatter masking credentials found in URLs, including third-party logs (urllib3, requests)."""
+
+    def format(self, record):
+        return _SECRET_PARAMS.sub(r"\1=***", super().format(record))
+
+
 class BiolovisionApiException(Exception):
     """An exception occurred while handling your request."""
 
