@@ -1203,7 +1203,7 @@ class Observations(DownloadVn):
                 if len(deleted) > 0:
                     self._backend.delete_obs(deleted)
 
-            # Advance the watermark only once every update was stored, else the next run retries them
+            # Advance the increment timestamp only once every update was stored, else the next run retries them
             if taxo_since is not None and download_ok:
                 self._backend.increment_log(self._site, taxo, update_ts)
 
