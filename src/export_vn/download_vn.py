@@ -1100,15 +1100,15 @@ class Observations(DownloadVn):
             t_units_to_process = [None]
 
         for taxo in taxo_list:
+            taxo_since = since if since is not None else self._backend.increment_get(self._site, taxo)
+            # Taken before the diff so changes made during the download are caught by the next run
+            update_ts = datetime.now()
+            download_ok = True
             for t_u in t_units_to_process:
                 updated = []
                 deleted = []
-                if since is None:
-                    since = self._backend.increment_get(self._site, taxo)
-                if since is not None:
+                if taxo_since is not None:
                     # Valid since date provided or found in database
-                    self._backend.increment_log(self._site, taxo, datetime.now())
-                    
                     # Build territorial unit ID for API call
                     # diff API uses the numeric id field, not id_country+short_name
                     id_territorial_unit = None
@@ -1119,13 +1119,13 @@ class Observations(DownloadVn):
                             taxo,
                             t_u[0]["name"],
                             id_territorial_unit,
-                            since,
+                            taxo_since,
                         )
                     else:
-                        logger.info(_("Getting updates for taxo_group %s since %s"), taxo, since)
-                    
+                        logger.info(_("Getting updates for taxo_group %s since %s"), taxo, taxo_since)
+
                     items_dict = self._api_instance.api_diff(
-                        taxo, since, modification_type="all", id_territorial_unit=id_territorial_unit
+                        taxo, taxo_since, modification_type="all", id_territorial_unit=id_territorial_unit
                     )
 
                     # List by processing type
@@ -1189,6 +1189,7 @@ class Observations(DownloadVn):
                                 timing,
                             )
                 except HTTPError:
+                    download_ok = False
                     logger.exception(_("HTTP error during download"))
                     self._backend.log(
                         self._site,
@@ -1201,6 +1202,10 @@ class Observations(DownloadVn):
                 # Process deletes
                 if len(deleted) > 0:
                     self._backend.delete_obs(deleted)
+
+            # Advance the watermark only once every update was stored, else the next run retries them
+            if taxo_since is not None and download_ok:
+                self._backend.increment_log(self._site, taxo, update_ts)
 
         return None
 
